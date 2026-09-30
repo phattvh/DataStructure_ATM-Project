@@ -1,0 +1,21 @@
+# Compiler outputs
+*.o
+*.obj
+*.exe
+*.out
+*.app
+
+# Build directories
+build/
+bin/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Test outputs
+test_runner
+test_atm.exe
+atm_project.exe
