@@ -24,9 +24,13 @@ public:
 
     static void printMainMenu();
     static void printAdminMenu();
+    static void printUserMenu();
     static void displayCardList(const LinkedList<Card>& listCards, const LinkedList<std::string>& listLockedIds);
     static void pauseScreen();
     static void clearScreen();
+
+    static bool confirmAction(const std::string& strPrompt);
+    static std::string inputPin(const std::string& strPrompt);
 };
 
 #endif // CONSOLEVIEW_H_INCLUDED_

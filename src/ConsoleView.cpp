@@ -199,3 +199,25 @@ void ConsoleView::clearScreen() {
     std::cout << "\033[2J\033[1;1H";
 #endif
 }
+
+void ConsoleView::printUserMenu() {
+    ConsoleView::printHeader("PHAN HE KHACH HANG (USER MODULE)");
+    std::cout << "1. Xem thong tin tai khoan\n";
+    std::cout << "2. Rut tien\n";
+    std::cout << "3. Chuyen tien\n";
+    std::cout << "4. Xem lich su giao dich\n";
+    std::cout << "5. Doi ma PIN\n";
+    std::cout << "0. Tra the - Dang xuat\n";
+    std::cout << "------------------------------------------------------\n";
+}
+
+bool ConsoleView::confirmAction(const std::string& strPrompt) {
+    std::cout << ANSI_YELLOW << strPrompt << " (y/n): " << ANSI_RESET;
+    std::string strInput;
+    std::getline(std::cin, strInput);
+    return (strInput == "y" || strInput == "Y");
+}
+
+std::string ConsoleView::inputPin(const std::string& strPrompt) {
+    return ConsoleView::inputPassword(strPrompt);
+}

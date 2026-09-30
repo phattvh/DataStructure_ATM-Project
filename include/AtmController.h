@@ -35,11 +35,19 @@ public:
     void handleDeleteCard();
     void handleUnlockCard();
 
-    // Luong Khach hang
+    // Luong Khach hang (Nhiem vu Tuan 2)
     void processUserLogin();
+    void processUserMenu(const std::string& strId);
+    void handleViewAccountInfo();
+    void handleWithdraw();
+    void handleTransfer();
+    void handleViewHistory();
+    void handleChangePin();
 
     // Tien ich kiem tra hop le
     static bool isValidIdFormat(const std::string& strId);
+    static bool isValidPinFormat(const std::string& strPin);
+    static std::string getCurrentTimestamp();
 };
 
 #endif // ATMCONTROLLER_H_INCLUDED_
