@@ -3,10 +3,12 @@
 #include "FileService.h"
 #include <iostream>
 #include <cctype>
-#include <ctime>
+#include <chrono>
+#include <iomanip>
+#include <sstream>
 
 AtmController::AtmController()
-    : _pCurrentAccount(nullptr), _currentUserRole(ROLE_NONE) {}
+    : _pCurrentAccount(nullptr), _currentUserRole(ROLE_NONE), _bShouldExit(false) {}
 
 AtmController::~AtmController() {
     if (this->_pCurrentAccount != nullptr) {
@@ -50,6 +52,17 @@ void AtmController::run() {
                 break;
             case 2:
                 this->processUserLogin();
+                // Kiem tra co hieu thoat chuong trinh (doc dong 168: sai 3 lan -> thoat CT)
+                if (this->_bShouldExit) {
+                    this->_listAdmins.clear();
+                    this->_listCards.clear();
+                    this->_listLockedIds.clear();
+                    if (this->_pCurrentAccount != nullptr) {
+                        delete this->_pCurrentAccount;
+                        this->_pCurrentAccount = nullptr;
+                    }
+                    return;
+                }
                 break;
             case 0:
                 ConsoleView::printInfo("Cam on ban da su dung dich vu ATM. Tam biet!");
@@ -288,11 +301,12 @@ bool AtmController::isValidPinFormat(const std::string& strPin) {
 }
 
 std::string AtmController::getCurrentTimestamp() {
-    std::time_t t = std::time(nullptr);
-    struct tm* pTm = std::localtime(&t);
-    char buf[32];
-    std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", pTm);
-    return std::string(buf);
+    auto now = std::chrono::system_clock::now();
+    std::time_t tNow = std::chrono::system_clock::to_time_t(now);
+    struct tm* pTm = std::localtime(&tNow);
+    std::ostringstream oss;
+    oss << std::put_time(pTm, "%Y-%m-%d %H:%M:%S");
+    return oss.str();
 }
 
 // =====================================================================
@@ -352,14 +366,17 @@ void AtmController::processUserLogin() {
         } else {
             pCard->recordFailedAttempt();
             if (pCard->isLocked()) {
-                // Ghi vao file KhoaThe.txt
+                // Ghi vao file KhoaThe.txt de Admin mo khoa sau
                 this->_listLockedIds.addTail(strId);
                 FileService::saveLockedIds(this->_listLockedIds);
                 FileService::saveCards(this->_listCards);
                 ConsoleView::printError("Nhap sai PIN qua " + std::to_string(MAX_FAILED_LOGINS) +
-                                        " lan! The bi khoa tu dong.");
-                ConsoleView::printWarning("Vui long lien he Admin de mo khoa.");
+                                        " lan! The " + strId + " da bi KHOA TU DONG.");
+                ConsoleView::printWarning("Vui long lien he Admin de mo khoa the.");
+                ConsoleView::printInfo("Chuong trinh se dong. Tam biet!");
                 ConsoleView::pauseScreen();
+                // Tuan thu doc dong 168: "thoat chuong trinh" sau khi khoa the
+                this->_bShouldExit = true;
                 return;
             } else {
                 int iLeft = MAX_FAILED_LOGINS - pCard->getFailedAttempts();
@@ -501,40 +518,56 @@ void AtmController::handleWithdraw() {
         return;
     }
 
-    // Reload so du moi nhat
+    // Reload so du moi nhat truoc khi giao dich
     FileService::loadAccount(this->_pCurrentAccount->getId(), *this->_pCurrentAccount);
 
     ConsoleView::printHeader("RUT TIEN");
     std::cout << "  So du hien tai: " << this->_pCurrentAccount->getBalance()
-              << " " << this->_pCurrentAccount->getCurrency() << "\n\n";
+              << " " << this->_pCurrentAccount->getCurrency() << "\n";
+    std::cout << "  So tien co the rut toi da: "
+              << (this->_pCurrentAccount->getBalance() - MIN_BALANCE_RESERVE) << " VND\n\n";
 
-    long lAmount = ConsoleView::inputMoney("Nhap so tien muon rut (boi so 50,000 VND): ");
+    // Vong lap cho phep nhap lai hoac huy (tuan thu doc dong 198)
+    long lAmount = 0;
+    bool bValidAmount = false;
+    while (!bValidAmount) {
+        lAmount = ConsoleView::inputMoney("Nhap so tien muon rut (boi so 50,000 VND, 0 = Huy): ");
+        if (lAmount == 0) {
+            ConsoleView::printInfo("Da huy giao dich rut tien.");
+            ConsoleView::pauseScreen();
+            return;
+        }
 
-    ErrorCode errCheck = this->_pCurrentAccount->canWithdraw(lAmount);
-    switch (errCheck) {
-        case ERR_INVALID_AMOUNT:
-            ConsoleView::printError("So tien rut toi thieu la 50,000 VND!");
-            ConsoleView::pauseScreen();
-            return;
-        case ERR_NOT_MULTIPLE:
-            ConsoleView::printError("So tien phai la boi so cua 50,000 VND (vd: 50000, 100000, 250000...)!");
-            ConsoleView::pauseScreen();
-            return;
-        case ERR_INSUFFICIENT_FUNDS:
-            ConsoleView::printError("So du khong du! Tai khoan phai duy tri toi thieu 50,000 VND.");
-            ConsoleView::printInfo("So tien toi da co the rut: " +
-                std::to_string(this->_pCurrentAccount->getBalance() - MIN_BALANCE_RESERVE) + " VND");
-            ConsoleView::pauseScreen();
-            return;
-        case ERR_NONE:
-            break;
-        default:
-            ConsoleView::printError("Loi khong xac dinh!");
-            ConsoleView::pauseScreen();
-            return;
+        ErrorCode errCheck = this->_pCurrentAccount->canWithdraw(lAmount);
+        switch (errCheck) {
+            case ERR_INVALID_AMOUNT:
+                ConsoleView::printError("So tien rut toi thieu la 50,000 VND!");
+                break;
+            case ERR_NOT_MULTIPLE:
+                ConsoleView::printError("So tien phai la boi so cua 50,000 VND (vd: 50000, 100000, 250000...)!");
+                break;
+            case ERR_INSUFFICIENT_FUNDS:
+                ConsoleView::printError("So du khong du! Phai duy tri toi thieu 50,000 VND.");
+                ConsoleView::printInfo("So tien toi da co the rut: " +
+                    std::to_string(this->_pCurrentAccount->getBalance() - MIN_BALANCE_RESERVE) + " VND");
+                break;
+            case ERR_NONE:
+                bValidAmount = true;
+                break;
+            default:
+                ConsoleView::printError("Loi khong xac dinh!");
+                break;
+        }
+        if (!bValidAmount) {
+            if (!ConsoleView::confirmAction("Ban co muon nhap lai so tien khong")) {
+                ConsoleView::printInfo("Da huy giao dich.");
+                ConsoleView::pauseScreen();
+                return;
+            }
+        }
     }
 
-    // Xac nhan giao dich
+    // Xac nhan giao dich truoc khi thuc hien
     std::string strConfirmMsg = "Xac nhan rut " + std::to_string(lAmount) + " VND";
     if (!ConsoleView::confirmAction(strConfirmMsg)) {
         ConsoleView::printInfo("Da huy giao dich rut tien.");
@@ -547,14 +580,14 @@ void AtmController::handleWithdraw() {
 
     // Ghi file [ID].txt
     if (!FileService::saveAccount(*this->_pCurrentAccount)) {
-        // Rollback neu ghi file that bai
+        // Rollback RAM neu ghi file that bai
         this->_pCurrentAccount->deposit(lAmount);
-        ConsoleView::printError("Loi he thong! Khong the ghi file. Giao dich bi huy.");
+        ConsoleView::printError("Loi he thong! Khong the ghi file. Giao dich bi huy an toan.");
         ConsoleView::pauseScreen();
         return;
     }
 
-    // Ghi lich su
+    // Ghi lich su rut tien vao [LichSuID].txt
     std::string strTimestamp = AtmController::getCurrentTimestamp();
     Transaction trans(this->_pCurrentAccount->getId(), WITHDRAW, lAmount, strTimestamp,
                       "Rut tien tai may ATM");
@@ -618,37 +651,54 @@ void AtmController::handleTransfer() {
         return;
     }
 
-    // Hien thi thong tin nguoi nhan de xac nhan
+    // Hien thi thong tin nguoi nhan de xac nhan truoc
     ConsoleView::printInfo("Tai khoan nhan: " + receiverAccount.getName() + " (ID: " + strReceiverId + ")");
+    std::cout << "  So du cua ban  : " << this->_pCurrentAccount->getBalance()
+              << " " << this->_pCurrentAccount->getCurrency() << "\n";
+    std::cout << "  Toi da chuyen  : "
+              << (this->_pCurrentAccount->getBalance() - MIN_BALANCE_RESERVE) << " VND\n\n";
 
-    // Buoc 2: Nhap so tien chuyen
-    long lAmount = ConsoleView::inputMoney("Nhap so tien chuyen (boi so 50,000 VND): ");
+    // Vong lap nhap so tien: cho phep nhap lai hoac huy (tuan thu doc dong 198)
+    long lAmount = 0;
+    bool bValidTransfer = false;
+    while (!bValidTransfer) {
+        lAmount = ConsoleView::inputMoney("Nhap so tien chuyen (boi so 50,000 VND, 0 = Huy): ");
+        if (lAmount == 0) {
+            ConsoleView::printInfo("Da huy giao dich chuyen tien.");
+            ConsoleView::pauseScreen();
+            return;
+        }
 
-    ErrorCode errCheck = this->_pCurrentAccount->canWithdraw(lAmount);
-    switch (errCheck) {
-        case ERR_INVALID_AMOUNT:
-            ConsoleView::printError("So tien chuyen toi thieu la 50,000 VND!");
-            ConsoleView::pauseScreen();
-            return;
-        case ERR_NOT_MULTIPLE:
-            ConsoleView::printError("So tien phai la boi so cua 50,000 VND!");
-            ConsoleView::pauseScreen();
-            return;
-        case ERR_INSUFFICIENT_FUNDS:
-            ConsoleView::printError("So du khong du! Phai duy tri toi thieu 50,000 VND.");
-            ConsoleView::printInfo("So tien toi da co the chuyen: " +
-                std::to_string(this->_pCurrentAccount->getBalance() - MIN_BALANCE_RESERVE) + " VND");
-            ConsoleView::pauseScreen();
-            return;
-        case ERR_NONE:
-            break;
-        default:
-            ConsoleView::printError("Loi khong xac dinh!");
-            ConsoleView::pauseScreen();
-            return;
+        ErrorCode errCheck = this->_pCurrentAccount->canWithdraw(lAmount);
+        switch (errCheck) {
+            case ERR_INVALID_AMOUNT:
+                ConsoleView::printError("So tien chuyen toi thieu la 50,000 VND!");
+                break;
+            case ERR_NOT_MULTIPLE:
+                ConsoleView::printError("So tien phai la boi so cua 50,000 VND!");
+                break;
+            case ERR_INSUFFICIENT_FUNDS:
+                ConsoleView::printError("So du khong du! Phai duy tri toi thieu 50,000 VND.");
+                ConsoleView::printInfo("So tien toi da co the chuyen: " +
+                    std::to_string(this->_pCurrentAccount->getBalance() - MIN_BALANCE_RESERVE) + " VND");
+                break;
+            case ERR_NONE:
+                bValidTransfer = true;
+                break;
+            default:
+                ConsoleView::printError("Loi khong xac dinh!");
+                break;
+        }
+        if (!bValidTransfer) {
+            if (!ConsoleView::confirmAction("Ban co muon nhap lai so tien khong")) {
+                ConsoleView::printInfo("Da huy giao dich.");
+                ConsoleView::pauseScreen();
+                return;
+            }
+        }
     }
 
-    // Xac nhan giao dich
+    // Xac nhan giao dich lan cuoi
     std::string strConfirmMsg = "Xac nhan chuyen " + std::to_string(lAmount) +
                                 " VND cho " + receiverAccount.getName();
     if (!ConsoleView::confirmAction(strConfirmMsg)) {

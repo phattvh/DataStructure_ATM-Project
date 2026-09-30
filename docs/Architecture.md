@@ -55,6 +55,14 @@ Hệ thống mô phỏng cây ATM ngân hàng được thiết kế theo mô hì
     - Thêm tài khoản thẻ mới (kiểm tra định dạng 14 số, gán PIN mặc định 123456, tự sinh file `[ID].txt` và `LichSu[ID].txt`).
     - Xóa thẻ: Gỡ bỏ khỏi RAM, cập nhật `TheTu.txt`, xóa `[ID].txt` và bảo toàn `LichSu[ID].txt`.
     - Mở khóa thẻ: Đọc danh sách khóa từ `KhoaThe.txt`, đặt lại số lần nhập sai về 0, mở trạng thái khóa.
+  - Phân hệ Khách hàng (`processUserLogin`, `processUserMenu`):
+    - Đăng nhập bảo mật: Kiểm tra mã thẻ (14 số), mã PIN (6 số, ẩn dấu `*`).
+    - Khóa thẻ tự động: Nhập sai PIN quá 3 lần liên tiếp sẽ tự động khóa thẻ, cập nhật vào `KhoaThe.txt` và thoát chương trình an toàn.
+    - Ép buộc đổi mã PIN mặc định: Nếu mã PIN hiện tại là `123456`, người dùng bị chặn và bắt buộc đổi PIN mới (khác PIN cũ, khác mặc định, xác nhận 2 lần) trước khi vào menu chính.
+    - Rút tiền (`handleWithdraw`): Kiểm tra hạn mức tối thiểu 50.000 VNĐ, bội số 50.000 VNĐ, duy trì số dư an toàn tối thiểu 50.000 VNĐ. Hỗ trợ cơ chế cho phép nhập lại hoặc hủy giao dịch khi nhập sai.
+    - Chuyển tiền nguyên tử (`handleTransfer` - Atomicity): Xác thực tài khoản thụ hưởng tồn tại, hiển thị thông tin người nhận để xác nhận; trừ tiền người gửi và cộng tiền người nhận trong RAM; cập nhật đồng thời cả hai file `[ID].txt`; ghi log thời gian thực vào cả 2 file `[LichSuID].txt`; rollback hoàn toàn nếu gặp sự cố ghi tệp tin.
+    - Xem thông tin tài khoản & lịch sử giao dịch: Hiển thị biến động số dư định dạng chuẩn thời gian `YYYY-MM-DD HH:MM:SS`.
+    - Đổi mã PIN (`handleChangePin`): Xác thực PIN cũ, kiểm tra quy tắc định dạng và cập nhật vào `TheTu.txt`.
   - Quản lý bộ nhớ: Tự động dọn dẹp các danh sách liên kết khi thoát, hủy con trỏ tài khoản hiện tại để ngăn ngừa thất thoát bộ nhớ.
 
 ### 2.2. Tầng Lưu trữ & Quản lý Tệp (FileService)

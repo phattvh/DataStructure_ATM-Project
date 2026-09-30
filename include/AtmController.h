@@ -19,6 +19,7 @@ private:
     LinkedList<std::string> _listLockedIds;
     Account* _pCurrentAccount;
     UserRole _currentUserRole;
+    bool _bShouldExit;   // Co hieu: Thoat chuong trinh sau su co nghiem trong (vd: sai PIN 3 lan)
 
 public:
     AtmController();
