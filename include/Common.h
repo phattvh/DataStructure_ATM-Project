@@ -44,7 +44,8 @@ enum ErrorCode {
     ERR_CARD_LOCKED = 5,
     ERR_ID_EXISTS = 6,
     ERR_ID_NOT_FOUND = 7,
-    ERR_INVALID_FORMAT = 8
+    ERR_INVALID_FORMAT = 8,
+    ERR_SAME_ACCOUNT = 9
 };
 
 #endif // COMMON_H_INCLUDED_
