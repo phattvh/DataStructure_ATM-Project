@@ -47,6 +47,7 @@ Dự án tập trung vào việc áp dụng mô hình **Lập trình Hướng đ
 ```text
 DataStructure_ATM-Project/
 ├── Makefile                          # Script biên dịch tự động (g++ -std=c++17 -Wall -Wextra)
+├── build.ps1                         # Script hỗ trợ biên dịch nhanh trên Windows PowerShell
 ├── README.md                         # Tài liệu giới thiệu chính của repository
 ├── Project/                          # Tài liệu đề bài và biểu mẫu gốc từ giảng viên
 │   ├── Đề Bài.pdf
@@ -67,7 +68,10 @@ DataStructure_ATM-Project/
 │   ├── 04_ctdl_va_thuat_toan.md      # Thiết kế Template LinkedList & Phân tích Big-O
 │   ├── 05_thiet_ke_chi_tiet.md       # Thiết kế chi tiết từng Class & Method
 │   ├── 06_ke_hoach_trien_khai.md     # Phân công công việc & Lộ trình 14 ngày
-│   └── 07_ke_hoach_kiem_thu.md       # Ma trận Test Cases & Kiểm định Valgrind
+│   ├── 07_ke_hoach_kiem_thu.md       # Ma trận Test Cases & Kiểm định Valgrind
+│   ├── Architecture.md               # Thiết kế kiến trúc tổng thể
+│   ├── DemoScript.md                 # Kịch bản demo kiểm thử
+│   └── GitRules.md                   # Quy chuẩn Git workflow
 ├── include/                          # Tệp tin Header (*.h)
 │   ├── Common.h                      # Hằng số, Enum, ErrorCode
 │   ├── LinkedList.h                  # Template Class Cấu trúc dữ liệu
@@ -112,10 +116,25 @@ Nhóm đã xây dựng tài liệu chi tiết cho từng giai đoạn phát tri�
 ### 1. Yêu cầu môi trường
 * **Hệ điều hành**: Linux (Ubuntu 20.04/22.04/24.04), macOS, hoặc Windows (hỗ trợ WSL / MinGW / MSVC).
 * **Trình biên dịch**: `g++` hoặc `clang++` hỗ trợ chuẩn **C++17** trở lên.
-* **Công cụ xây dựng**: `make`.
+* **Công cụ xây dựng**: `make` hoặc PowerShell (`build.ps1`).
 * **Công cụ kiểm định bộ nhớ (tùy chọn)**: `valgrind` (trên Linux).
 
-### 2. Các lệnh thao tác với `Makefile`
+### 2. Thao tác trên Windows (PowerShell)
+
+```powershell
+# 1. Chạy bộ kiểm thử tự động (Unit Test)
+.\build.ps1 test
+
+# 2. Biên dịch ứng dụng chính
+.\build.ps1 all
+
+# 3. Khởi chạy ứng dụng ATM
+.\build.ps1 run
+# Hoặc chạy trực tiếp:
+.\atm_project.exe
+```
+
+### 3. Thao tác với `Makefile` (Linux / macOS / MinGW)
 
 ```bash
 # 1. Biên dịch toàn bộ chương trình (sản phẩm nằm tại bin/atm_app)
