@@ -1,5 +1,7 @@
 #include "ConsoleView.h"
+#include "Account.h"
 #include <iostream>
+#include <iomanip>
 #include <limits>
 
 #ifdef _WIN32
@@ -46,6 +48,10 @@ void ConsoleView::printHeader(const std::string& strTitle) {
     std::cout << ANSI_CYAN << ANSI_BOLD << "\n======================================================\n";
     std::cout << "  " << strTitle << "\n";
     std::cout << "======================================================\n" << ANSI_RESET;
+}
+
+void ConsoleView::printPrompt(const std::string& strPrompt) {
+    std::cout << ANSI_CYAN << strPrompt << ANSI_RESET << std::flush;
 }
 
 void ConsoleView::printError(const std::string& strMsg) {
@@ -117,6 +123,47 @@ long ConsoleView::inputMoney(const std::string& strPrompt) {
             ConsoleView::printError("Dinh dang khong hop le (phai la so). Vui long nhap lai!");
         }
     }
+}
+
+void ConsoleView::printAdminMenu() {
+    std::cout << ANSI_CYAN << ANSI_BOLD << "\n* * * * * * * * * * MENU ADMIN * * * * * * * * * *\n" << ANSI_RESET;
+    std::cout << "  1. Xem danh sach tai khoan\n";
+    std::cout << "  2. Them tai khoan\n";
+    std::cout << "  3. Xoa tai khoan\n";
+    std::cout << "  4. Mo khoa tai khoan\n";
+    std::cout << "  5. Thoat\n";
+    std::cout << ANSI_CYAN << ANSI_BOLD << "* * * * * * * * * * * * * * * * * * * * * * * * * *\n" << ANSI_RESET;
+}
+
+void ConsoleView::printCardTableHeader() {
+    std::cout << ANSI_CYAN << "\n+----+----------------+--------+----------------+\n";
+    std::cout << "| STT| MA SO THE (ID) | MA PIN | TRANG THAI     |\n";
+    std::cout << "+----+----------------+--------+----------------+\n" << ANSI_RESET;
+}
+
+void ConsoleView::printCardRow(const std::string& strId,
+                             const std::string& strPin,
+                             bool bIsLocked) {
+    std::cout << "|    | " << std::left << std::setw(15) << strId
+              << "| " << std::setw(7) << strPin << "| ";
+    if (bIsLocked) {
+        std::cout << ANSI_RED << std::setw(15) << "Bi Khoa" << ANSI_RESET;
+    } else {
+        std::cout << ANSI_GREEN << std::setw(15) << "Hoat Dong" << ANSI_RESET;
+    }
+    std::cout << "|\n";
+}
+
+void ConsoleView::printCardTableFooter() {
+    std::cout << ANSI_CYAN << "+----+----------------+--------+----------------+\n" << ANSI_RESET;
+}
+
+void ConsoleView::displayAccountInfo(const Account& account) {
+    std::cout << ANSI_CYAN << ANSI_BOLD << "\n===== THONG TIN TAI KHOAN =====\n" << ANSI_RESET;
+    std::cout << "  Ma so ID : " << account.getId() << "\n";
+    std::cout << "  Chu the  : " << account.getName() << "\n";
+    std::cout << "  So du    : " << ANSI_GREEN << ANSI_BOLD << account.getBalance() << " " << account.getCurrency() << ANSI_RESET << "\n";
+    std::cout << ANSI_CYAN << "===============================\n" << ANSI_RESET;
 }
 
 void ConsoleView::pauseScreen() {

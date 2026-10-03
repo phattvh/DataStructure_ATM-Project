@@ -3,10 +3,14 @@
 
 #include <string>
 
+// Forward declaration
+class Account;
+
 /**********************************************************
  * @Description: Lop tien ich xu ly giao dien dong lenh (Console CLI)
- * Bao gom mau sac ANSI, an mat khau thanh dau *, va bay loi nhap lieu
- * (Phu trach boi Member C - Task 3.1)
+ * Bao gom mau sac ANSI, an mat khau thanh dau *, bay loi nhap lieu
+ * va dinh dang khung vien menu Admin / User
+ * (Phu trach boi Member C - Task 3.1 & Task 3.3)
  **********************************************************/
 class ConsoleView {
 public:
@@ -16,6 +20,13 @@ public:
      * @return void
      **********************************************************/
     static void printHeader(const std::string& strTitle);
+
+    /**********************************************************
+     * @Description In loi nhac lenh cho nguoi dung nhap lieu
+     * @param strPrompt Chuoi nhac lenh
+     * @return void
+     **********************************************************/
+    static void printPrompt(const std::string& strPrompt);
 
     /**********************************************************
      * @Description In thong bao loi mau do
@@ -53,6 +64,42 @@ public:
      * @return So tien hop le kieu long
      **********************************************************/
     static long inputMoney(const std::string& strPrompt);
+
+    /**********************************************************
+     * @Description In menu giao dien quan tri Admin theo de bai
+     * @return void
+     **********************************************************/
+    static void printAdminMenu();
+
+    /**********************************************************
+     * @Description In tieu de bang danh sach the tu
+     * @return void
+     **********************************************************/
+    static void printCardTableHeader();
+
+    /**********************************************************
+     * @Description In mot dong thong tin the tu trong bang
+     * @param strId Ma so the 14 chu so
+     * @param strPin Ma PIN the
+     * @param bIsLocked Trang thai the bi khoa hay khong
+     * @return void
+     **********************************************************/
+    static void printCardRow(const std::string& strId,
+                             const std::string& strPin,
+                             bool bIsLocked);
+
+    /**********************************************************
+     * @Description In duong vien ket thuc bang the tu
+     * @return void
+     **********************************************************/
+    static void printCardTableFooter();
+
+    /**********************************************************
+     * @Description Hien thi thong tin chi tiet tai khoan
+     * @param account Doi tuong Account can xem
+     * @return void
+     **********************************************************/
+    static void displayAccountInfo(const Account& account);
 
     /**********************************************************
      * @Description Tam dung man hinh cho nguoi dung nhan Enter
