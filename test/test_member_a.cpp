@@ -1,5 +1,5 @@
 #include <iostream>
-#include <cassert>
+#include <limits>
 #include "Common.h"
 #include "Card.h"
 #include "Account.h"
@@ -74,7 +74,7 @@ bool testAccountModel() {
 }
 
 bool testUserControllerLogic() {
-    std::cout << "\n=== KIEM THU 3: NGIEP VU PHAN HE USER (USERCONTROLLER) ===\n";
+    std::cout << "\n=== KIEM THU 3: NGHIEP VU PHAN HE USER (USERCONTROLLER) ===\n";
     Card card("10014504500002", "123456");
     Account sender("10014504500002", "TRAN THI B", 1000000, "VND");
     Account receiver("10014504500003", "LE VAN C", 200000, "VND");
@@ -105,7 +105,14 @@ bool testUserControllerLogic() {
     ASSERT_TEST(sender.getBalance() == 700000, "Nguoi gui con 700,000 VND");
     ASSERT_TEST(receiver.getBalance() == 500000, "Nguoi nhan tang len 500,000 VND");
 
-    // 4. Test doi PIN
+    // 4. Test co che Rollback dam bao nguyen tu khi nguoi nhan bi loi
+    Account overflowAcc("10014504500004", "TRAN OVERFLOW", std::numeric_limits<long>::max() - 10000, "VND");
+    long lSenderBefore = sender.getBalance();
+    ErrorCode errOverflow = UserController::processTransfer(sender, overflowAcc, 50000);
+    ASSERT_TEST(errOverflow == ERR_SYSTEM_OVERFLOW, "Phat hien tran so nguoi nhan -> ERR_SYSTEM_OVERFLOW");
+    ASSERT_TEST(sender.getBalance() == lSenderBefore, "Rollback thanh cong: So du nguoi gui duoc bao toan nguyen ven");
+
+    // 5. Test doi PIN
     std::string strMsg;
     bool bChangeFail = UserController::processChangePin(card, "wrongpin", "654321", "654321", strMsg);
     ASSERT_TEST(!bChangeFail, "Doi PIN that bai khi nhap sai PIN cu");

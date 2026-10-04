@@ -1,12 +1,37 @@
-# CHANGELOG - NHÁNH PHAT (MEMBER C - TUẦN 1)
+# CHANGELOG - DỰ ÁN MÔ PHỎNG ATM (NHÁNH FIX & NHÁNH PHAT)
 
-Tài liệu này ghi lại toàn bộ lịch sử thay đổi, thiết kế kỹ thuật, sửa lỗi bảo mật và nâng cấp mã nguồn được thực hiện trên nhánh `phat` của dự án **DataStructure_ATM-Project**.
+Tài liệu này ghi lại toàn bộ lịch sử thay đổi, thiết kế kỹ thuật, sửa lỗi bảo mật và nâng cấp mã nguồn được thực hiện trên nhánh `phat` và nhánh tích hợp `fix`.
+
+---
+
+## [1.2.0] - 2026-10-04 (Branch Fix: Tích hợp Hợp nhất & Vá Lỗ hổng Sâu)
+
+Giai đoạn hợp nhất mã nguồn giữa Tuấn (Member A) và Phát (Member C), giải quyết triệt để các xung đột bằng cách chọn lọc mã nguồn tối ưu và khắc phục các lỗ hổng logic nghiệp vụ:
+
+### 🚀 Nâng cấp & Sửa lỗi Nghiệp vụ (`UserController`)
+- **Vá lỗi chuyển tiền làm biến mất số dư trong `runUserSession()`**:
+  - Khắc phục lỗ hổng nghiêm trọng: Menu chuyển tiền trước đó chỉ trừ tiền người gửi mà không hỏi tài khoản nhận.
+  - Bổ sung yêu cầu nhập số tài khoản người nhận, kiểm tra định dạng 14 chữ số, chặn tự chuyển tiền cho chính mình (`ERR_SAME_ACCOUNT`).
+- **Bảo đảm Tính nguyên tử ACID với cơ chế Rollback**:
+  - Trong `processTransfer()`: Nếu quá trình nạp tiền vào tài khoản người nhận gặp lỗi (ví dụ tràn số nguyên `ERR_SYSTEM_OVERFLOW`), hệ thống tự động hoàn tiền lại nguyên vẹn cho người gửi.
+- **Tích hợp hiển thị Biên lai giao dịch chuẩn**:
+  - Tích hợp `ConsoleView::printReceipt()` vào các giao dịch Rút tiền và Chuyển tiền thành công trong phiên khách hàng.
+- **Tái sử dụng mã nguồn (DRY Principle)**:
+  - Loại bỏ định nghĩa lặp lại của `isValidPinFormat` trong `UserController`, ủy thác trực tiếp sang `Card::isValidPinFormat`.
+- **Kiểm tra kết quả đổi mã PIN**:
+  - `enforceDefaultPinChange()` và `processChangePin()` kiểm tra cẩn thận giá trị trả về của `card.changePin(strNewPin)` trước khi thông báo thành công.
+
+### 🧪 Đồng bộ & Mở rộng Bộ kiểm thử (`Makefile` & `test/`)
+- Cập nhật `Makefile` biên dịch đồng thời `ConsoleView`, `Card`, `Account`, `UserController`.
+- `make test` thực thi song song cả 2 bộ kiểm thử:
+  - `test_member_c`: Kiểm thử biên, kiểm thử I/O stream tự động.
+  - `test_member_a`: Bổ sung kiểm thử cơ chế Rollback nguyên tử và mở khóa thẻ chuẩn SRP.
 
 ---
 
 ## [1.1.0] - 2026-10-04 (Security Hardening & Refactoring Phase)
 
-Đợt nâng cấp toàn diện nhằm giải quyết triệt để các lỗ hổng bảo mật, bẫy I/O terminal, lỗi đóng gói mô hình và hiện đại hóa mã nguồn theo chuẩn C++17.
+Đợt nâng cấp toàn diện nhằm giải quyết triệt để các lỗ hổng bảo mật, bẫy I/O terminal, lỗi đóng gói mô hình và hiện đại hóa mã nguồn theo chuẩn C++17 trên nhánh `phat`.
 
 ### 🛡️ Bảo mật & Xử lý I/O Terminal (`ConsoleView`)
 - **Vá lỗ hổng chuỗi thoát ANSI (Escape Sequence)**:
@@ -36,7 +61,7 @@ Tài liệu này ghi lại toàn bộ lịch sử thay đổi, thiết kế kỹ
 
 ### ⚙️ Hiện đại hóa Cấu hình Hệ thống (`Common.h`)
 - Chuyển toàn bộ các hằng số hệ thống sang `inline constexpr` và `inline const std::string` (chuẩn C++17) để triệt tiêu việc duplicate dữ liệu tĩnh giữa các Translation Units (`.cpp`).
-- Bổ sung mã lỗi `ERR_SYSTEM_OVERFLOW = 9` vào `enum ErrorCode`.
+- Bổ sung mã lỗi `ERR_SYSTEM_OVERFLOW = 10` và `ERR_SAME_ACCOUNT = 9` vào `enum ErrorCode`.
 
 ### 🧪 Nâng cấp Bộ kiểm thử Tự động (`test/test_member_c.cpp`)
 - Thay thế hoàn toàn thư viện `<cassert>` bằng macro tùy biến `TEST_CHECK`, ngăn chặn việc bị vô hiệu hóa khi biên dịch với cờ tối ưu `-DNDEBUG`.
@@ -48,32 +73,3 @@ Tài liệu này ghi lại toàn bộ lịch sử thay đổi, thiết kế kỹ
 ## [1.0.0] - 2026-10-04 (Initial Deliverables Phase)
 
 Giai đoạn khởi tạo các thành phần nền tảng cho Tuần 1 theo phân công đồ án.
-
-### ✨ Tính năng đã thêm
-- **`include/Common.h`**: Khởi tạo hằng số hệ thống (`DEFAULT_PIN`, `MIN_TRANSACTION`, `MIN_BALANCE_RESERVE`, `MAX_FAILED_LOGINS`, `ID_LENGTH`, `PIN_LENGTH`, `DATA_DIR`) và các enum nghiệp vụ (`TransactionType`, `UserRole`, `ErrorCode`).
-- **`include/ConsoleView.h` & `src/ConsoleView.cpp`**: 
-  - Hiển thị màu sắc ANSI (`[LOI]`, `[THANH CONG]`, `[CANH BAO]`).
-  - Hàm nhập mật khẩu che giấu dấu `*` (`inputPassword`).
-  - Khung viền menu quản trị và hiển thị danh sách thẻ Admin.
-- **`include/Card.h` & `src/Card.cpp`**: 
-  - Khởi tạo thực thể thẻ từ.
-  - Cơ chế đếm số lần sai và tự động khóa sau 3 lần.
-- **`include/Account.h` & `src/Account.cpp`**: 
-  - Khởi tạo thực thể tài khoản khách hàng.
-  - Hiện thực các ràng buộc tài chính: Rút tối thiểu 50k, bội số 50k, duy trì số dư tối thiểu 50k.
-- **`Makefile` & `.gitignore`**: 
-  - Xây dựng Makefile biên dịch với cờ `-std=c++17 -Wall -Wextra`, tách riêng thư mục `build/`.
-  - Cấu hình file thực thi test tự động `make test`.
-
----
-
-## Danh sách Commit trên nhánh `phat`
-
-1. `f67d0a7` - `feat(common): initialize shared system constants and error codes`
-2. `e429e2e` - `feat(ui): implement ConsoleView with ANSI colors and secure input masking`
-3. `e8d9302` - `feat(models): implement Card and Account entity models following C++ standard`
-4. `529dbb3` - `feat(ui): add admin layout helpers, build script and unit tests for member C deliverables`
-5. `d750350` - `refactor(common): modernize constants with inline linkage and expand error codes`
-6. `b55e2b3` - `fix(models): harden Card and Account invariants with strict validation`
-7. `a2a4321` - `fix(ui): patch escape sequence bug, EOF hang and add User UI helpers in ConsoleView`
-8. `8eed08e` - `test(qa): overhaul test suite with robust assertions and edge case coverage`
