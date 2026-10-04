@@ -6,14 +6,15 @@
 /**********************************************************
  * @Description: Cac hang so he thong ATM tuan thu quy tac UPPERCASE
  * (Rule 4 trong C++ Coding Standard Version 2)
+ * Su dung inline (C++17) de tranh khoi tao trung lap giua cac TU
  **********************************************************/
-const std::string DEFAULT_PIN = "123456";
-const long MIN_TRANSACTION = 50000;
-const long MIN_BALANCE_RESERVE = 50000;
-const int MAX_FAILED_LOGINS = 3;
-const int ID_LENGTH = 14;
-const int PIN_LENGTH = 6;
-const std::string DATA_DIR = "data/";
+inline const std::string DEFAULT_PIN = "123456";
+inline constexpr long MIN_TRANSACTION = 50000;
+inline constexpr long MIN_BALANCE_RESERVE = 50000;
+inline constexpr int MAX_FAILED_LOGINS = 3;
+inline constexpr int ID_LENGTH = 14;
+inline constexpr int PIN_LENGTH = 6;
+inline const std::string DATA_DIR = "data/";
 
 /**********************************************************
  * @Description: Loai giao dich ngan hang
@@ -45,7 +46,8 @@ enum ErrorCode {
     ERR_CARD_LOCKED = 5,
     ERR_ID_EXISTS = 6,
     ERR_ID_NOT_FOUND = 7,
-    ERR_INVALID_FORMAT = 8
+    ERR_INVALID_FORMAT = 8,
+    ERR_SYSTEM_OVERFLOW = 9
 };
 
 #endif // COMMON_H_INCLUDED_
