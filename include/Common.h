@@ -47,7 +47,8 @@ enum ErrorCode {
     ERR_ID_EXISTS = 6,
     ERR_ID_NOT_FOUND = 7,
     ERR_INVALID_FORMAT = 8,
-    ERR_SYSTEM_OVERFLOW = 9
+    ERR_SAME_ACCOUNT = 9,
+    ERR_SYSTEM_OVERFLOW = 10
 };
 
 #endif // COMMON_H_INCLUDED_

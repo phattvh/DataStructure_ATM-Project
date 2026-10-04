@@ -75,6 +75,10 @@ void ConsoleView::printWarning(const std::string& strMsg) {
     std::cout << ANSI_YELLOW << ANSI_BOLD << "[CANH BAO] " << strMsg << ANSI_RESET << "\n";
 }
 
+void ConsoleView::printInfo(const std::string& strMsg) {
+    std::cout << ANSI_BLUE << ANSI_BOLD << "[THONG TIN] " << strMsg << ANSI_RESET << "\n";
+}
+
 std::string ConsoleView::inputPassword(const std::string& strPrompt, std::istream* pInStream) {
     std::cout << strPrompt << std::flush;
 
@@ -92,7 +96,6 @@ std::string ConsoleView::inputPassword(const std::string& strPrompt, std::istrea
     while (true) {
         int iRaw = _getch();
         if (iRaw == 0 || iRaw == 224) {
-            // Phim chuc nang / mui ten tren Windows: doc bo ma quet
             _getch();
             continue;
         }
@@ -175,17 +178,20 @@ std::string ConsoleView::inputPassword(const std::string& strPrompt, std::istrea
     return strPassword;
 }
 
+std::string ConsoleView::inputPin(const std::string& strPrompt) {
+    return ConsoleView::inputPassword(strPrompt);
+}
+
 long ConsoleView::inputMoney(const std::string& strPrompt, std::istream& inStream) {
     while (true) {
         std::cout << strPrompt << std::flush;
         std::string strLine;
         if (!std::getline(inStream, strLine)) {
-            // Gap tin hieu EOF (Ctrl+D hoac luong dong)
             ConsoleView::printWarning("Luong nhap lieu da ket thuc (EOF).");
             return 0;
         }
 
-        // Trim khoang trang dau va cuoi
+        // Trim khoang trang
         size_t iStart = strLine.find_first_not_of(" \t\r\n");
         if (iStart == std::string::npos) {
             ConsoleView::printError("So tien khong duoc de trong. Vui long nhap lai!");
@@ -194,7 +200,6 @@ long ConsoleView::inputMoney(const std::string& strPrompt, std::istream& inStrea
         size_t iEnd = strLine.find_last_not_of(" \t\r\n");
         std::string strTrimmed = strLine.substr(iStart, iEnd - iStart + 1);
 
-        // Kiem tra toan bo ky tu phai la chu so (chan so thuc, ky tu dac biet, so am)
         bool bAllDigits = true;
         for (char c : strTrimmed) {
             if (!std::isdigit(static_cast<unsigned char>(c))) {
@@ -219,24 +224,85 @@ long ConsoleView::inputMoney(const std::string& strPrompt, std::istream& inStrea
     }
 }
 
+int ConsoleView::inputMenuChoice(int iMin, int iMax, const std::string& strPrompt) {
+    while (true) {
+        std::cout << strPrompt << std::flush;
+        std::string strLine;
+        if (!std::getline(std::cin, strLine)) {
+            return iMin;
+        }
+
+        size_t iStart = strLine.find_first_not_of(" \t\r\n");
+        if (iStart == std::string::npos) {
+            ConsoleView::printError("Lua chon khong duoc de trong!");
+            continue;
+        }
+        size_t iEnd = strLine.find_last_not_of(" \t\r\n");
+        std::string strTrimmed = strLine.substr(iStart, iEnd - iStart + 1);
+
+        try {
+            int iChoice = std::stoi(strTrimmed);
+            if (iChoice >= iMin && iChoice <= iMax) {
+                return iChoice;
+            }
+            ConsoleView::printError("Lua chon ngoai pham vi hop le! Vui long chon lai.");
+        } catch (...) {
+            ConsoleView::printError("Vui long nhap so hop le!");
+        }
+    }
+}
+
+std::string ConsoleView::inputLine(const std::string& strPrompt) {
+    std::cout << strPrompt << std::flush;
+    std::string strResult;
+    std::getline(std::cin, strResult);
+    return strResult;
+}
+
+bool ConsoleView::confirmAction(const std::string& strPrompt) {
+    std::cout << ANSI_YELLOW << strPrompt << " (y/n): " << ANSI_RESET << std::flush;
+    std::string strInput;
+    std::getline(std::cin, strInput);
+    return (!strInput.empty() && (strInput[0] == 'y' || strInput[0] == 'Y'));
+}
+
+void ConsoleView::printMainMenu() {
+    ConsoleView::printHeader("HE THONG ATM NGAN HANG (BANKING SIMULATION)");
+    std::cout << "  1. Dang nhap Quan tri vien (Admin)\n";
+    std::cout << "  2. Dang nhap Khach hang (User)\n";
+    std::cout << "  0. Thoat chuong trinh\n";
+    std::cout << "------------------------------------------------------\n";
+}
+
 void ConsoleView::printAdminMenu() {
-    std::cout << ANSI_CYAN << ANSI_BOLD << "\n* * * * * * * * * * MENU ADMIN * * * * * * * * * *\n" << ANSI_RESET;
-    std::cout << "  1. Xem danh sach tai khoan\n";
-    std::cout << "  2. Them tai khoan\n";
-    std::cout << "  3. Xoa tai khoan\n";
-    std::cout << "  4. Mo khoa tai khoan\n";
-    std::cout << "  5. Thoat\n";
-    std::cout << ANSI_CYAN << ANSI_BOLD << "* * * * * * * * * * * * * * * * * * * * * * * * * *\n" << ANSI_RESET;
+    ConsoleView::printHeader("PHAN HE QUAN TRI VIEN (ADMIN MODULE)");
+    std::cout << "  1. Xem danh sach the tu\n";
+    std::cout << "  2. Them tai khoan the moi\n";
+    std::cout << "  3. Xoa tai khoan the\n";
+    std::cout << "  4. Mo khoa the bi khoa\n";
+    std::cout << "  0. Dang xuat (Quay lai menu chinh)\n";
+    std::cout << "------------------------------------------------------\n";
 }
 
 void ConsoleView::printUserMenu() {
-    std::cout << ANSI_CYAN << ANSI_BOLD << "\n* * * * * * * * * * MENU KHACH HANG * * * * * * * *\n" << ANSI_RESET;
+    ConsoleView::printHeader("PHAN HE KHACH HANG (USER MODULE)");
     std::cout << "  1. Xem thong tin tai khoan\n";
     std::cout << "  2. Rut tien\n";
     std::cout << "  3. Chuyen tien\n";
-    std::cout << "  4. Doi ma PIN\n";
-    std::cout << "  5. Dang xuat\n";
-    std::cout << ANSI_CYAN << ANSI_BOLD << "* * * * * * * * * * * * * * * * * * * * * * * * * *\n" << ANSI_RESET;
+    std::cout << "  4. Xem lich su giao dich\n";
+    std::cout << "  5. Doi ma PIN\n";
+    std::cout << "  0. Tra the - Dang xuat\n";
+    std::cout << "------------------------------------------------------\n";
+}
+
+void ConsoleView::clearScreen() {
+    std::cout << "\033[2J\033[1;1H" << std::flush;
+}
+
+void ConsoleView::pauseScreen() {
+    std::cout << "\nNhan [Enter] de tiep tuc..." << std::flush;
+    std::string strDummy;
+    std::getline(std::cin, strDummy);
 }
 
 void ConsoleView::printCardTableHeader() {
@@ -289,10 +355,4 @@ void ConsoleView::displayAccountDetails(const std::string& strId,
 
 void ConsoleView::displayAccountInfo(const Account& account) {
     displayAccountDetails(account.getId(), account.getName(), account.getBalance(), account.getCurrency());
-}
-
-void ConsoleView::pauseScreen() {
-    std::cout << "\nNhan [Enter] de tiep tuc...";
-    std::string strDummy;
-    std::getline(std::cin, strDummy);
 }

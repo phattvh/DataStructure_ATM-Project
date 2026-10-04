@@ -17,6 +17,12 @@ bool Card::isValidPinFormat(const std::string& strPin) {
 Card::Card()
     : _strId(""), _strPin(DEFAULT_PIN), _iFailedAttempts(0), _bIsLocked(false) {}
 
+Card::Card(const std::string& strId, const std::string& strPin)
+    : _strId(strId),
+      _strPin(isValidPinFormat(strPin) ? strPin : DEFAULT_PIN),
+      _iFailedAttempts(0),
+      _bIsLocked(false) {}
+
 Card::Card(const std::string& strId, const std::string& strPin, bool bIsLocked)
     : _strId(strId),
       _strPin(isValidPinFormat(strPin) ? strPin : DEFAULT_PIN),
@@ -64,6 +70,13 @@ void Card::unlockCard() {
 
 void Card::lockCard() {
     this->_bIsLocked = true;
+}
+
+void Card::setLocked(bool bLocked) {
+    this->_bIsLocked = bLocked;
+    if (!bLocked) {
+        this->_iFailedAttempts = 0;
+    }
 }
 
 bool Card::changePin(const std::string& strNewPin) {

@@ -2,10 +2,11 @@
 #define CARD_H_INCLUDED_
 
 #include <string>
+#include "Common.h"
 
 /**********************************************************
  * @Description: Lop dai dien cho Thuc the The tu trong he thong ATM
- * (Phu trach boi Member C - Task 3.2)
+ * (Tuan thu C++ Coding Standard V2, tich hop bao mat cao cap)
  **********************************************************/
 class Card {
 private:
@@ -21,12 +22,19 @@ public:
     Card();
 
     /**********************************************************
-     * @Description Constructor khoi tao co tham so
+     * @Description Constructor khoi tao co 2 tham so (mac dinh chua khoa)
+     * @param strId Ma so the (14 chu so)
+     * @param strPin Ma PIN (6 chu so)
+     **********************************************************/
+    Card(const std::string& strId, const std::string& strPin);
+
+    /**********************************************************
+     * @Description Constructor khoi tao co day du tham so
      * @param strId Ma so the (14 chu so)
      * @param strPin Ma PIN (6 chu so)
      * @param bIsLocked Trang thai the bi khoa hay khong
      **********************************************************/
-    Card(const std::string& strId, const std::string& strPin, bool bIsLocked = false);
+    Card(const std::string& strId, const std::string& strPin, bool bIsLocked);
 
     /**********************************************************
      * @Description Lay ma so ID cua the
@@ -84,6 +92,13 @@ public:
      * @return void
      **********************************************************/
     void lockCard();
+
+    /**********************************************************
+     * @Description Setter cap nhat trang thai khoa the
+     * @param bLocked true de khoa, false de mo
+     * @return void
+     **********************************************************/
+    void setLocked(bool bLocked);
 
     /**********************************************************
      * @Description Thay doi ma PIN moi cho the co kiem tra hop le:

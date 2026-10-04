@@ -6,7 +6,7 @@
 
 /**********************************************************
  * @Description: Lop dai dien cho Thuc the Tai khoan khach hang
- * (Phu trach boi Member C - Task 3.2)
+ * (Tuan thu C++ Coding Standard V2, bao ve tinh toan ven tai chinh)
  **********************************************************/
 class Account {
 private:
@@ -56,6 +56,27 @@ public:
      * @return Chuoi loai tien te
      **********************************************************/
     std::string getCurrency() const;
+
+    /**********************************************************
+     * @Description Cap nhat ho ten chu tai khoan
+     * @param strName Ho ten moi
+     * @return void
+     **********************************************************/
+    void setName(const std::string& strName);
+
+    /**********************************************************
+     * @Description Cap nhat so du tai khoan co kiem tra am
+     * @param lBalance So du moi (>= 0)
+     * @return void
+     **********************************************************/
+    void setBalance(long lBalance);
+
+    /**********************************************************
+     * @Description Cap nhat don vi tien te
+     * @param strCurrency Don vi tien te moi
+     * @return void
+     **********************************************************/
+    void setCurrency(const std::string& strCurrency);
 
     /**********************************************************
      * @Description Kiem tra xem co the rut so tien lAmount khong

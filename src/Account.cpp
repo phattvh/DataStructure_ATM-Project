@@ -29,6 +29,20 @@ std::string Account::getCurrency() const {
     return this->_strCurrency;
 }
 
+void Account::setName(const std::string& strName) {
+    this->_strName = strName;
+}
+
+void Account::setBalance(long lBalance) {
+    if (lBalance >= 0) {
+        this->_lBalance = lBalance;
+    }
+}
+
+void Account::setCurrency(const std::string& strCurrency) {
+    this->_strCurrency = strCurrency;
+}
+
 ErrorCode Account::canWithdraw(long lAmount) const {
     if (lAmount < MIN_TRANSACTION) {
         return ERR_INVALID_AMOUNT;

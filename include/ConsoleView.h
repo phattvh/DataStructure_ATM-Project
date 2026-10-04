@@ -3,6 +3,8 @@
 
 #include <string>
 #include <iostream>
+#include <iomanip>
+#include "Common.h"
 
 // Forward declaration
 class Account;
@@ -11,7 +13,6 @@ class Account;
  * @Description: Lop tien ich xu ly giao dien dong lenh (Console CLI)
  * Bao gom mau sac ANSI, an mat khau thanh dau *, bay loi nhap lieu
  * va dinh dang khung vien menu Admin / User
- * (Phu trach boi Member C - Task 3.1 & Task 3.3)
  **********************************************************/
 class ConsoleView {
 public:
@@ -51,6 +52,13 @@ public:
     static void printWarning(const std::string& strMsg);
 
     /**********************************************************
+     * @Description In thong bao thong tin mau xanh duong
+     * @param strMsg Noi dung thong tin
+     * @return void
+     **********************************************************/
+    static void printInfo(const std::string& strMsg);
+
+    /**********************************************************
      * @Description Nhap mat khau / ma PIN che giau thanh dau *
      * Ho tro xu ly mui ten/escape sequences, Backspace, va stream mock
      * @param strPrompt Loi nhac nhap
@@ -59,6 +67,13 @@ public:
      **********************************************************/
     static std::string inputPassword(const std::string& strPrompt,
                                      std::istream* pInStream = nullptr);
+
+    /**********************************************************
+     * @Description Alias goi ham inputPassword cho ma PIN
+     * @param strPrompt Loi nhac nhap
+     * @return Chuoi PIN
+     **********************************************************/
+    static std::string inputPin(const std::string& strPrompt);
 
     /**********************************************************
      * @Description Nhap so tien an toan theo dong, chong troi lenh,
@@ -71,6 +86,35 @@ public:
                            std::istream& inStream = std::cin);
 
     /**********************************************************
+     * @Description Nhap lua chon menu trong khoang [iMin, iMax] co bay loi
+     * @param iMin Gia tri nho nhat
+     * @param iMax Gia tri lon nhat
+     * @param strPrompt Loi nhac nhap
+     * @return So nguyen lua chon hop le
+     **********************************************************/
+    static int inputMenuChoice(int iMin, int iMax, const std::string& strPrompt);
+
+    /**********************************************************
+     * @Description Nhap mot dong chuoi van ban co khoang trang
+     * @param strPrompt Loi nhac nhap
+     * @return Chuoi nguoi dung da nhap
+     **********************************************************/
+    static std::string inputLine(const std::string& strPrompt);
+
+    /**********************************************************
+     * @Description Xac nhan hanh dong Co / Khong (y/n)
+     * @param strPrompt Loi nhac xac nhan
+     * @return true neu y/Y, nguoc lai false
+     **********************************************************/
+    static bool confirmAction(const std::string& strPrompt);
+
+    /**********************************************************
+     * @Description In menu dieu huong chinh cua he thong ATM
+     * @return void
+     **********************************************************/
+    static void printMainMenu();
+
+    /**********************************************************
      * @Description In menu giao dien quan tri Admin theo de bai
      * @return void
      **********************************************************/
@@ -78,10 +122,21 @@ public:
 
     /**********************************************************
      * @Description In menu giao dien khach hang User
-     * (Nhiem vu trong tam cua Member C)
      * @return void
      **********************************************************/
     static void printUserMenu();
+
+    /**********************************************************
+     * @Description Xoa man hinh console bang ma ANSI
+     * @return void
+     **********************************************************/
+    static void clearScreen();
+
+    /**********************************************************
+     * @Description Tam dung man hinh cho nguoi dung nhan Enter
+     * @return void
+     **********************************************************/
+    static void pauseScreen();
 
     /**********************************************************
      * @Description In tieu de bang danh sach the tu
@@ -142,10 +197,48 @@ public:
     static void displayAccountInfo(const Account& account);
 
     /**********************************************************
-     * @Description Tam dung man hinh cho nguoi dung nhan Enter
-     * @return void
+     * @Description Template hien thi danh sach the tu he thong
      **********************************************************/
-    static void pauseScreen();
+    template <typename ListCardType, typename ListLockedType>
+    static void displayCardList(const ListCardType& listCards, const ListLockedType& listLockedIds) {
+        printHeader("DANH SACH THE TU HE THONG");
+        std::cout << std::left 
+                  << std::setw(6)  << "STT" 
+                  << std::setw(20) << "MA THE (ID)" 
+                  << std::setw(12) << "MA PIN" 
+                  << std::setw(18) << "TRANG THAI" 
+                  << "\n";
+        std::cout << "------------------------------------------------------\n";
+
+        int iIndex = 1;
+        auto pCur = listCards.getHead();
+        while (pCur != nullptr) {
+            std::string strId = pCur->_data.getId();
+            bool bIsLocked = pCur->_data.isLocked();
+
+            auto pLockCur = listLockedIds.getHead();
+            while (pLockCur != nullptr) {
+                if (pLockCur->_data == strId) {
+                    bIsLocked = true;
+                    break;
+                }
+                pLockCur = pLockCur->_pNext;
+            }
+
+            std::string strStatus = bIsLocked ? "\033[31mBi khoa\033[0m" 
+                                              : "\033[32mHoat dong\033[0m";
+
+            std::cout << std::left 
+                      << std::setw(6)  << iIndex++ 
+                      << std::setw(20) << strId 
+                      << std::setw(12) << "******" 
+                      << std::setw(18) << strStatus 
+                      << "\n";
+
+            pCur = pCur->_pNext;
+        }
+        std::cout << "------------------------------------------------------\n";
+    }
 };
 
 #endif // CONSOLEVIEW_H_INCLUDED_
