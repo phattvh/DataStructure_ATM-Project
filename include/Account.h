@@ -25,7 +25,7 @@ public:
      * @Description Constructor khoi tao co tham so
      * @param strId Ma so tai khoan (14 chu so)
      * @param strName Ho va ten chu tai khoan (co khoang trang)
-     * @param lBalance So du ban dau (kieu long)
+     * @param lBalance So du ban dau (kieu long, khong duoc am)
      * @param strCurrency Loai tien te (mac dinh: "VND")
      **********************************************************/
     Account(const std::string& strId,
@@ -66,18 +66,19 @@ public:
     ErrorCode canWithdraw(long lAmount) const;
 
     /**********************************************************
-     * @Description Thuc hien tru so du tai khoan
+     * @Description Thuc hien tru so du tai khoan co kiem tra rang buoc canWithdraw
      * @param lAmount So tien rut
-     * @return void
+     * @return true neu rut thanh cong, false neu khong du dieu kien
      **********************************************************/
-    void withdraw(long lAmount);
+    bool withdraw(long lAmount);
 
     /**********************************************************
      * @Description Thuc hien cong them tien vao so du tai khoan
-     * @param lAmount So tien nap hoac nhan
-     * @return void
+     * Chan tuyet doi so am va chong tran so nguyen (integer overflow)
+     * @param lAmount So tien nap hoac nhan (> 0)
+     * @return true neu nap thanh cong, false neu so tien khong hop le
      **********************************************************/
-    void deposit(long lAmount);
+    bool deposit(long lAmount);
 };
 
 #endif // ACCOUNT_H_INCLUDED_

@@ -67,23 +67,44 @@ public:
     void recordFailedAttempt();
 
     /**********************************************************
-     * @Description Dat lai so lan dang nhap sai ve 0 va mo khoa the
+     * @Description Dat lai so lan dang nhap sai ve 0 khi dang nhap thanh cong
+     * (Khong tu dong mo khoa the da bi khoa)
      * @return void
      **********************************************************/
     void resetFailedAttempts();
 
     /**********************************************************
-     * @Description Thay doi ma PIN moi cho the
-     * @param strNewPin Ma PIN moi (6 chu so)
+     * @Description Mo khoa the va dat lai so lan dang nhap sai ve 0
      * @return void
      **********************************************************/
-    void changePin(const std::string& strNewPin);
+    void unlockCard();
+
+    /**********************************************************
+     * @Description Chu dong khoa the
+     * @return void
+     **********************************************************/
+    void lockCard();
+
+    /**********************************************************
+     * @Description Thay doi ma PIN moi cho the co kiem tra hop le:
+     * phai dung PIN_LENGTH (6 ky tu) va toan bo la chu so
+     * @param strNewPin Ma PIN moi
+     * @return true neu doi thanh cong, false neu ma PIN sai dinh dang
+     **********************************************************/
+    bool changePin(const std::string& strNewPin);
 
     /**********************************************************
      * @Description Lay so lan dang nhap sai hien tai
      * @return So lan sai kieu int
      **********************************************************/
     int getFailedAttempts() const;
+
+    /**********************************************************
+     * @Description Ham tien ich tinh kiem tra dinh dang ma PIN
+     * @param strPin Ma PIN can kiem tra
+     * @return true neu dung 6 chu so
+     **********************************************************/
+    static bool isValidPinFormat(const std::string& strPin);
 };
 
 #endif // CARD_H_INCLUDED_

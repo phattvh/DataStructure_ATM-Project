@@ -1,4 +1,5 @@
 #include "Account.h"
+#include <limits>
 
 Account::Account()
     : _strId(""), _strName(""), _lBalance(0), _strCurrency("VND") {}
@@ -7,7 +8,10 @@ Account::Account(const std::string& strId,
                  const std::string& strName,
                  long lBalance,
                  const std::string& strCurrency)
-    : _strId(strId), _strName(strName), _lBalance(lBalance), _strCurrency(strCurrency) {}
+    : _strId(strId),
+      _strName(strName),
+      _lBalance(lBalance < 0 ? 0 : lBalance),
+      _strCurrency(strCurrency) {}
 
 std::string Account::getId() const {
     return this->_strId;
@@ -38,10 +42,22 @@ ErrorCode Account::canWithdraw(long lAmount) const {
     return ERR_NONE;
 }
 
-void Account::withdraw(long lAmount) {
+bool Account::withdraw(long lAmount) {
+    if (this->canWithdraw(lAmount) != ERR_NONE) {
+        return false;
+    }
     this->_lBalance -= lAmount;
+    return true;
 }
 
-void Account::deposit(long lAmount) {
+bool Account::deposit(long lAmount) {
+    if (lAmount <= 0) {
+        return false;
+    }
+    // Phong chong tran so nguyen (integer overflow)
+    if (std::numeric_limits<long>::max() - this->_lBalance < lAmount) {
+        return false;
+    }
     this->_lBalance += lAmount;
+    return true;
 }
