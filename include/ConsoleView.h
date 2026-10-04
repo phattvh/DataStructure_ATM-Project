@@ -2,6 +2,7 @@
 #define CONSOLEVIEW_H_INCLUDED_
 
 #include <string>
+#include <iostream>
 
 // Forward declaration
 class Account;
@@ -51,25 +52,36 @@ public:
 
     /**********************************************************
      * @Description Nhap mat khau / ma PIN che giau thanh dau *
-     * Ho tro ca Windows (_getch) va Linux (termios) kem xoa lui Backspace
+     * Ho tro xu ly mui ten/escape sequences, Backspace, va stream mock
      * @param strPrompt Loi nhac nhap
+     * @param pInStream Con tro luong nhap tuy chon (nullptr: doc truc tiep terminal)
      * @return Chuoi mat khau nguoi dung da nhap
      **********************************************************/
-    static std::string inputPassword(const std::string& strPrompt);
+    static std::string inputPassword(const std::string& strPrompt,
+                                     std::istream* pInStream = nullptr);
 
     /**********************************************************
-     * @Description Nhap so tien an toan, bay loi cin.fail()
-     * chong sap chuong trinh khi nguoi dung nhap chu
+     * @Description Nhap so tien an toan theo dong, chong troi lenh,
+     * chan so thuc, chu cai, so am va xu ly EOF khong bi treo loop
      * @param strPrompt Loi nhac nhap
-     * @return So tien hop le kieu long
+     * @param inStream Luong du lieu dau vao (mac dinh: std::cin)
+     * @return So tien hop le kieu long (hoac 0 neu gap EOF)
      **********************************************************/
-    static long inputMoney(const std::string& strPrompt);
+    static long inputMoney(const std::string& strPrompt,
+                           std::istream& inStream = std::cin);
 
     /**********************************************************
      * @Description In menu giao dien quan tri Admin theo de bai
      * @return void
      **********************************************************/
     static void printAdminMenu();
+
+    /**********************************************************
+     * @Description In menu giao dien khach hang User
+     * (Nhiem vu trong tam cua Member C)
+     * @return void
+     **********************************************************/
+    static void printUserMenu();
 
     /**********************************************************
      * @Description In tieu de bang danh sach the tu
@@ -95,7 +107,35 @@ public:
     static void printCardTableFooter();
 
     /**********************************************************
-     * @Description Hien thi thong tin chi tiet tai khoan
+     * @Description In bien lai giao dich tai chinh
+     * @param strId Ma so tai khoan
+     * @param strAction Ten loai giao dich
+     * @param lAmount So tien giao dich
+     * @param lRemainingBalance So du con lai
+     * @param strTimestamp Thoi gian thuc hien
+     * @return void
+     **********************************************************/
+    static void printReceipt(const std::string& strId,
+                             const std::string& strAction,
+                             long lAmount,
+                             long lRemainingBalance,
+                             const std::string& strTimestamp);
+
+    /**********************************************************
+     * @Description Hien thi thong tin chi tiet tai khoan (phien ban doc lap)
+     * @param strId Ma so tai khoan
+     * @param strName Ho ten chu tai khoan
+     * @param lBalance So du kha dung
+     * @param strCurrency Don vi tien te
+     * @return void
+     **********************************************************/
+    static void displayAccountDetails(const std::string& strId,
+                                      const std::string& strName,
+                                      long lBalance,
+                                      const std::string& strCurrency);
+
+    /**********************************************************
+     * @Description Hien thi thong tin tai khoan tu doi tuong Account
      * @param account Doi tuong Account can xem
      * @return void
      **********************************************************/
