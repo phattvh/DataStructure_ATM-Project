@@ -9,7 +9,10 @@ TEST_DIR = test
 SRCS = $(SRC_DIR)/ConsoleView.cpp \
        $(SRC_DIR)/Card.cpp \
        $(SRC_DIR)/Account.cpp \
-       $(SRC_DIR)/UserController.cpp
+       $(SRC_DIR)/UserController.cpp \
+       $(SRC_DIR)/Admin.cpp \
+       $(SRC_DIR)/Transaction.cpp \
+       $(SRC_DIR)/FileService.cpp
 
 OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
 
@@ -19,7 +22,19 @@ TEST_C_BIN = $(BUILD_DIR)/test_member_c
 TEST_A_SRC = $(TEST_DIR)/test_member_a.cpp
 TEST_A_BIN = $(BUILD_DIR)/test_member_a
 
+TEST_AC_SRC = $(TEST_DIR)/test_phase_1_AC.cpp
+TEST_AC_BIN = $(BUILD_DIR)/test_phase_1_AC
+
+TEST_RUNNER_SRC = $(TEST_DIR)/test.cpp
+TEST_RUNNER_BIN = $(BUILD_DIR)/test_runner
+
+TEST_PHASE2_SRC = $(TEST_DIR)/test_phase_2_b.cpp
+TEST_PHASE2_BIN = $(BUILD_DIR)/test_phase_2_b
 all: $(OBJS)
+
+#=======================================================================
+
+#=======================================================================
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -27,7 +42,7 @@ $(BUILD_DIR):
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-test: test_c test_a
+test: test_c test_a test_ac test_runner test_phase_2
 
 test_c: $(OBJS) $(TEST_C_SRC) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(OBJS) $(TEST_C_SRC) -o $(TEST_C_BIN)
@@ -37,7 +52,19 @@ test_a: $(OBJS) $(TEST_A_SRC) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(OBJS) $(TEST_A_SRC) -o $(TEST_A_BIN)
 	./$(TEST_A_BIN)
 
+test_ac: $(OBJS) $(TEST_AC_SRC) | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(OBJS) $(TEST_AC_SRC) -o $(TEST_AC_BIN)
+	./$(TEST_AC_BIN)
+
+test_runner: $(OBJS) $(TEST_RUNNER_SRC) | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(OBJS) $(TEST_RUNNER_SRC) -o $(TEST_RUNNER_BIN)
+	./$(TEST_RUNNER_BIN)
+
+test_phase_2: $(OBJS) $(TEST_PHASE2_SRC) | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(OBJS) $(TEST_PHASE2_SRC) -o $(TEST_PHASE2_BIN)
+	./$(TEST_PHASE2_BIN)
+
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all test test_c test_a clean
+.PHONY: all test test_c test_a test_ac test_runner test_phase_2 clean
