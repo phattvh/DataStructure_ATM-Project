@@ -2,6 +2,10 @@
 #define COMMON_H_INCLUDED_
 
 #include <string>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 
 /**********************************************************
  * @Description: Cac hang so he thong ATM tuan thu quy tac UPPERCASE
@@ -50,5 +54,23 @@ enum ErrorCode {
     ERR_SAME_ACCOUNT = 9,
     ERR_SYSTEM_OVERFLOW = 10
 };
+
+/**********************************************************
+ * @Description: Ham tien ich lay thoi gian he thong hien tai
+ * dinh dang YYYY-MM-DD HH:MM:SS (C++17 inline)
+ **********************************************************/
+inline std::string getNowTimestamp() {
+    auto now = std::chrono::system_clock::now();
+    std::time_t tNow = std::chrono::system_clock::to_time_t(now);
+    std::tm tmNow;
+#ifdef _WIN32
+    localtime_s(&tmNow, &tNow);
+#else
+    localtime_r(&tNow, &tmNow);
+#endif
+    std::ostringstream oss;
+    oss << std::put_time(&tmNow, "%Y-%m-%d %H:%M:%S");
+    return oss.str();
+}
 
 #endif // COMMON_H_INCLUDED_

@@ -100,15 +100,5 @@ Transaction Transaction::parseFromFileLine(const std::string& strId, const std::
 }
 
 std::string Transaction::getCurrentTimestamp() {
-    auto now = std::chrono::system_clock::now();
-    std::time_t tNow = std::chrono::system_clock::to_time_t(now);
-    std::tm tmNow;
-#ifdef _WIN32
-    localtime_s(&tmNow, &tNow);
-#else
-    localtime_r(&tNow, &tmNow);
-#endif
-    std::ostringstream oss;
-    oss << std::put_time(&tmNow, "%Y-%m-%d %H:%M:%S");
-    return oss.str();
+    return getNowTimestamp();
 }

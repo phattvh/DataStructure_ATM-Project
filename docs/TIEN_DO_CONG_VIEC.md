@@ -1,6 +1,6 @@
 # 📋 BẢNG THEO DÕI TIẾN ĐỘ CÔNG VIỆC DỰ ÁN (PROJECT TASK TRACKER)
 > **Dự án:** `DataStructure_ATM-Project` (Mô phỏng hệ thống ATM bằng C++)  
-> **Cập nhật lần cuối:** 06/10/2026 (Kết thúc Phase 2 - Thành viên B hoàn tất)  
+> **Cập nhật lần cuối:** 08/10/2026 (Kết thúc Phase 2 - Thành viên C hoàn tất)  
 > **Quy chuẩn đánh giá trạng thái:** `DONE` (Đã hoàn thành) | `NOT DONE` (Chưa hoàn thành)
 
 ---
@@ -9,16 +9,16 @@
 
 ```mermaid
 pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án
-    "Đã Hoàn Thành (DONE)" : 24
-    "Chưa Hoàn Thành (NOT DONE)" : 14
+    "Đã Hoàn Thành (DONE)" : 29
+    "Chưa Hoàn Thành (NOT DONE)" : 9
 ```
 
 | Thành viên | Vai trò phụ trách | Tổng việc | Đã xong (DONE) | Còn lại (NOT DONE) | Tiến độ (%) |
 | :--- | :--- | :---: | :---: | :---: | :---: |
 | **TRÍ (Thành viên B)** | Data Engineer / Memory & Storage Flow | 12 | **9** | **3** | **75%** |
 | **TUẤN (Thành viên A)** | Business Logic / User Flow & UI | 13 | **7** | **6** | **54%** |
-| **PHÁT (Thành viên C)** | Tech Lead / Core Controller & Admin Flow | 13 | **8** | **5** | **62%** |
-| **TỔNG CỘNG** | **Toàn đội ngũ 3 thành viên** | **38** | **24** | **14** | **63.2%** |
+| **PHÁT (Thành viên C)** | Tech Lead / Core Controller & Admin Flow | 13 | **12** | **1** | **92.3%** |
+| **TỔNG CỘNG** | **Toàn đội ngũ 3 thành viên** | **38** | **29** | **9** | **76.3%** |
 
 ---
 
@@ -79,11 +79,11 @@ pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án
 | **C05** | Phase 1 | Unit test I/O Streams tự động | Viết test bẫy lỗi Stream I/O bằng `std::istringstream` không cần người dùng gõ tay. | `test/test_member_c.cpp` | **`DONE`** |
 | **C06** | Phase 1 | Soạn thảo Tài liệu Kiến trúc | Viết tài liệu Kiến trúc hệ thống 5 tầng và quy chuẩn phối hợp nhóm trên Git. | `docs/03_kien_truc_he_thong.md`<br>`docs/06_ke_hoach_trien_khai.md` | **`DONE`** |
 | **C07** | Phase 1 | Hợp nhất nhánh `fix` | Giải quyết xung đột git khi merge code của Member A và Member C vào nhánh `fix`. | Git branch `fix` | **`DONE`** |
-| **C08** | Phase 2 | Thêm hàm lấy thời gian hệ thống | Bổ sung hàm tiện ích `inline std::string getNowTimestamp()` trong `Common.h`. | `include/Common.h` | **`NOT DONE`** |
-| **C09** | Phase 2 | Xây dựng Bộ điều phối `AtmController` | Khai báo lớp `AtmController`, quản lý trạng thái phiên làm việc (`_pCurrentAccount`, `_pCurrentCard`, `_eCurrentRole`). | `include/AtmController.h` | **`NOT DONE`** |
-| **C10** | Phase 2 | Hiện thực Vòng lặp Menu chính | Vòng lặp ứng dụng: Điều hướng Menu Đăng nhập Admin, Đăng nhập User, Thoát chương trình dọn RAM. | `src/AtmController.cpp` | **`NOT DONE`** |
-| **C11** | Phase 2 | Hiện thực Phân hệ Quản trị Admin | 4 chức năng: Xem danh sách thẻ, Thêm thẻ (sinh 2 file), Xóa thẻ (xóa file ID), Mở khóa thẻ bị khóa. | `src/AtmController.cpp` | **`NOT DONE`** |
-| **C12** | Phase 2 | Điểm vào chính `src/main.cpp` | Viết `main()` gọi `FileService::initSampleData()` và kích hoạt `AtmController::run()`. | `src/main.cpp` | **`NOT DONE`** |
+| **C08** | Phase 2 | Thêm hàm lấy thời gian hệ thống | Bổ sung hàm tiện ích `inline std::string getNowTimestamp()` trong `Common.h`. | `include/Common.h` | **`DONE`** |
+| **C09** | Phase 2 | Xây dựng Bộ điều phối `AtmController` | Khai báo lớp `AtmController`, quản lý trạng thái phiên làm việc (`_pCurrentAccount`, `_pCurrentCard`, `_eCurrentRole`). | `include/AtmController.h` | **`DONE`** |
+| **C10** | Phase 2 | Hiện thực Vòng lặp Menu chính | Vòng lặp ứng dụng: Điều hướng Menu Đăng nhập Admin, Đăng nhập User, Thoát chương trình dọn RAM. | `src/AtmController.cpp` | **`DONE`** |
+| **C11** | Phase 2 | Hiện thực Phân hệ Quản trị Admin | 4 chức năng: Xem danh sách thẻ, Thêm thẻ (sinh 2 file), Xóa thẻ (xóa file ID), Mở khóa thẻ bị khóa. | `src/AtmController.cpp` | **`DONE`** |
+| **C12** | Phase 2 | Điểm vào chính `src/main.cpp` | Viết `main()` gọi `FileService::initSampleData()` và kích hoạt `AtmController::run()`. | `src/main.cpp` | **`DONE`** |
 | **C13** | Phase 4 | Hoàn thiện Sơ đồ Kỹ thuật Báo cáo | Vẽ sơ đồ UML Lớp hoàn chỉnh và sơ đồ luồng dữ liệu kiến trúc đưa vào Báo cáo Word. | Báo cáo Word | **`NOT DONE`** |
 
 ---
@@ -100,8 +100,8 @@ gantt
     Trí (QA Review Nhánh fix)       :done, p1_b, 2026-10-04, 2d
     section Phase 2 (Storage & Admin)
     Trí (LinkedList & FileService)  :done, p2_b, 2026-10-05, 2d
-    Phát (AtmController & Admin Flow):active, p2_c, 2026-10-06, 2d
-    Tuấn (Vá Lỗi #1, #2 & User UI)  :p2_a, 2026-10-06, 2d
+    Phát (AtmController & Admin Flow):done, p2_c, 2026-10-06, 2d
+    Tuấn (Vá Lỗi #1, #2 & User UI)  :active, p2_a, 2026-10-06, 2d
     section Phase 3 (Tích Hợp Giao Dịch)
     Tuấn & Trí (Ghép Chuyển tiền thật):p3_ab, 2026-10-08, 3d
     section Phase 4 (Báo Cáo & Demo)
