@@ -55,11 +55,29 @@ static bool atomicWriteFile(const std::string& strPath, const std::string& strCo
     std::error_code ec;
     fs::rename(strTempPath, strPath, ec);
     if (ec) {
-        // Fallback neu he dieu hanh khong cho rename de len file da ton tai
-        fs::remove(strPath, ec);
+        // Fallback an toan co sao luu phong ngua he dieu hanh khong cho rename de len file da ton tai
+        std::string strBakPath = strPath + ".bak";
+        std::error_code ecBak;
+        if (fs::exists(strPath)) {
+            fs::rename(strPath, strBakPath, ecBak);
+        }
+
         fs::rename(strTempPath, strPath, ec);
         if (ec) {
+            // Neu rename lan 2 van that bai, khoi phuc file goc tu backup
+            if (!ecBak && fs::exists(strBakPath)) {
+                std::error_code ecRestore;
+                fs::rename(strBakPath, strPath, ecRestore);
+            }
+            std::error_code ecCleanTmp;
+            fs::remove(strTempPath, ecCleanTmp);
             return false;
+        }
+
+        // Rename thanh cong -> don dep file backup
+        if (!ecBak && fs::exists(strBakPath)) {
+            std::error_code ecDelBak;
+            fs::remove(strBakPath, ecDelBak);
         }
     }
     return true;
