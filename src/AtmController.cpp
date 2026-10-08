@@ -379,11 +379,16 @@ void AtmController::adminDeleteCard() {
 }
 
 ErrorCode AtmController::unlockCardAccount(const std::string& strId) {
-    // 1. Tim the trong danh sach
+    // 1. Tim the trong danh sach the hoac danh sach khoa
     auto pCard = this->_listCards.findIf([&](const Card& c) {
         return c.getId() == strId;
     });
-    if (pCard == nullptr) {
+
+    bool bInLockedList = (this->_listLockedIds.findIf([&strId](const std::string& id) {
+        return id == strId;
+    }) != nullptr);
+
+    if (pCard == nullptr && !bInLockedList) {
         return ERR_ID_NOT_FOUND;
     }
 
@@ -392,12 +397,16 @@ ErrorCode AtmController::unlockCardAccount(const std::string& strId) {
         return id == strId;
     })) {}
 
-    // 3. Dat lai so lan sai va co khoa tren Card
-    pCard->unlockCard();
+    // 3. Dat lai so lan sai va co khoa tren Card neu the ton tai
+    if (pCard != nullptr) {
+        pCard->unlockCard();
+    }
 
     // 4. Luu thay doi ben vung vao disk
     FileService::saveLockedIds(this->_listLockedIds);
-    FileService::saveCards(this->_listCards);
+    if (pCard != nullptr) {
+        FileService::saveCards(this->_listCards);
+    }
 
     // 5. Ghi nhat ky kiem toan quan tri (Admin Audit Log)
     FileService::appendAdminLog("UNLOCK_CARD", "Mo khoa the " + strId);
