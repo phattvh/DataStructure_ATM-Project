@@ -386,39 +386,63 @@ void FileService::initSampleData() {
         }
     }
 
-    // 3. Khoi tao TheTu.txt va cac file [ID].txt neu TheTu.txt chua co
+    // 3. Khoi tao TheTu.txt va cac file [ID].txt neu he thong chua tung duoc khoi tao
+    // Su dung marker .system_initialized de tranh phuc sinh de du lieu khi TheTu.txt bi lam rong boi Admin
+    std::string strMarkerPath = DATA_DIR + ".system_initialized";
     std::string strTheTuPath = DATA_DIR + "TheTu.txt";
-    if (!fs::exists(strTheTuPath) || fs::file_size(strTheTuPath) == 0) {
-        struct SampleCard {
-            const char* szId;
-            const char* szPin;
-            const char* szName;
-            long lBalance;
-        };
+    if (!fs::exists(strMarkerPath)) {
+        if (!fs::exists(strTheTuPath) || fs::file_size(strTheTuPath) == 0) {
+            struct SampleCard {
+                const char* szId;
+                const char* szPin;
+                const char* szName;
+                long lBalance;
+            };
 
-        SampleCard sampleCards[] = {
-            {"10014504500001", "123456", "Nguyen Trung Kien", 5000000},
-            {"10014504500002", "123456", "Tran Thi Hoa",     10000000},
-            {"10014504500003", "654321", "Le Van Cuong",      2500000},
-            {"10014504500004", "123456", "Pham Minh Duc",      500000},
-            {"10014504500005", "888888", "Hoang Quoc Bao",   12000000},
-            {"10014504500006", "123456", "Vo Thi Mai",         800000},
-            {"10014504500007", "123456", "Dang Tuan Anh",     3000000},
-            {"10014504500008", "123456", "Bui Thi Lan",       1500000},
-            {"10014504500009", "123456", "Doan Ngoc Hai",     7200000},
-            {"10014504500010", "123456", "Truong Gia Binh",  20000000}
-        };
+            SampleCard sampleCards[] = {
+                {"10014504500001", "123456", "Nguyen Trung Kien", 5000000},
+                {"10014504500002", "123456", "Tran Thi Hoa",     10000000},
+                {"10014504500003", "654321", "Le Van Cuong",      2500000},
+                {"10014504500004", "123456", "Pham Minh Duc",      500000},
+                {"10014504500005", "888888", "Hoang Quoc Bao",   12000000},
+                {"10014504500006", "123456", "Vo Thi Mai",         800000},
+                {"10014504500007", "123456", "Dang Tuan Anh",     3000000},
+                {"10014504500008", "123456", "Bui Thi Lan",       1500000},
+                {"10014504500009", "123456", "Doan Ngoc Hai",     7200000},
+                {"10014504500010", "123456", "Truong Gia Binh",  20000000}
+            };
 
-        std::ofstream foutTheTu(strTheTuPath);
-        if (foutTheTu.is_open()) {
-            for (const auto& card : sampleCards) {
-                foutTheTu << card.szId << " " << card.szPin << "\n";
-                // Tao file [ID].txt va LichSu[ID].txt
-                createAccountFiles(card.szId, card.szName, card.lBalance, "VND");
+            std::ofstream foutTheTu(strTheTuPath);
+            if (foutTheTu.is_open()) {
+                for (const auto& card : sampleCards) {
+                    foutTheTu << card.szId << " " << card.szPin << "\n";
+                    // Tao file [ID].txt va LichSu[ID].txt
+                    createAccountFiles(card.szId, card.szName, card.lBalance, "VND");
+                }
+                foutTheTu.close();
             }
-            foutTheTu.close();
+        }
+
+        // Tao file marker ghi nhan khoi tao lan dau thanh cong
+        std::ofstream foutMarker(strMarkerPath);
+        if (foutMarker.is_open()) {
+            foutMarker << "INITIALIZED\n";
+            foutMarker.close();
         }
     }
+}
+
+/**********************************************************
+ * Ham noi bo: Khử trùng chuỗi ghi nhật ký (chống CWE-117 Log Injection)
+ **********************************************************/
+static std::string sanitizeLogField(const std::string& strInput) {
+    std::string strClean = strInput;
+    for (char& c : strClean) {
+        if (c == '\r' || c == '\n' || c == '|') {
+            c = ' ';
+        }
+    }
+    return strClean;
 }
 
 bool FileService::appendAdminLog(const std::string& strAction, const std::string& strDetail) {
@@ -428,7 +452,7 @@ bool FileService::appendAdminLog(const std::string& strAction, const std::string
     if (!outFile.is_open()) {
         return false;
     }
-    outFile << getNowTimestamp() << "|" << strAction << "|" << strDetail << "\n";
+    outFile << getNowTimestamp() << "|" << sanitizeLogField(strAction) << "|" << sanitizeLogField(strDetail) << "\n";
     outFile.close();
     return true;
 }
