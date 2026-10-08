@@ -42,6 +42,9 @@ TEST_PHASE2_A_BIN = $(BUILD_DIR)/test_phase_2_a
 TEST_PHASE2_C_SRC = $(TEST_DIR)/test_phase_2_c.cpp
 TEST_PHASE2_C_BIN = $(BUILD_DIR)/test_phase_2_c
 
+TEST_PHASE3_SRC = $(TEST_DIR)/test_phase_3.cpp
+TEST_PHASE3_BIN = $(BUILD_DIR)/test_phase_3
+
 all: $(OBJS) app
 
 app: $(OBJS) $(APP_SRC) | $(BUILD_DIR)
@@ -57,7 +60,7 @@ $(BUILD_DIR):
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-test: test_c test_a test_ac test_runner test_phase_2 test_phase_2_a test_phase_2_c
+test: test_c test_a test_ac test_runner test_phase_2 test_phase_2_a test_phase_2_c test_phase_3
 
 test_c: $(OBJS) $(TEST_C_SRC) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(OBJS) $(TEST_C_SRC) -o $(TEST_C_BIN)
@@ -87,7 +90,11 @@ test_phase_2_c: $(OBJS) $(TEST_PHASE2_C_SRC) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(OBJS) $(TEST_PHASE2_C_SRC) -o $(TEST_PHASE2_C_BIN)
 	./$(TEST_PHASE2_C_BIN)
 
+test_phase_3: $(OBJS) $(TEST_PHASE3_SRC) | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(OBJS) $(TEST_PHASE3_SRC) -o $(TEST_PHASE3_BIN)
+	./$(TEST_PHASE3_BIN)
+
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all app test test_c test_a test_ac test_runner test_phase_2 test_phase_2_a test_phase_2_c clean
+.PHONY: all app test test_c test_a test_ac test_runner test_phase_2 test_phase_2_a test_phase_2_c test_phase_3 clean
