@@ -302,6 +302,22 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                         break;
                     }
 
+                    // Nap lai so du moi nhat cua nguoi nhan ngay sau khi xac nhan (Chong TOCTOU Stale Read)
+                    errLoad = FileService::loadAccount(strReceiverId, receiverAcc);
+                    if (errLoad != ERR_NONE) {
+                        ConsoleView::printError("Tai khoan nguoi nhan co ma so " + strReceiverId + " khong con ton tai tren he thong!");
+                        ConsoleView::pauseScreen();
+                        break;
+                    }
+
+                    // Dong bo so du nguoi gui tu dia neu co giao dich nhan tien ngoai luong dien ra song song
+                    Account currentSenderOnDisk;
+                    if (FileService::loadAccount(acc.getId(), currentSenderOnDisk) == ERR_NONE) {
+                        if (currentSenderOnDisk.getBalance() > acc.getBalance()) {
+                            acc.setBalance(currentSenderOnDisk.getBalance());
+                        }
+                    }
+
                     ErrorCode err = UserController::processTransfer(acc, receiverAcc, lAmount);
                     if (err == ERR_INVALID_AMOUNT) {
                         ConsoleView::printError("So tien chuyen toi thieu phai tu 50,000 VND!");
