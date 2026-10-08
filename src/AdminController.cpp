@@ -116,7 +116,12 @@ void AdminController::addNewCard() {
     // Nhap va kiem tra dinh dang ID (14 chu so)
     std::string strNewId;
     while (true) {
-        strNewId = ConsoleView::inputLine("Nhap ma so the moi (14 chu so): ");
+        strNewId = ConsoleView::inputLine("Nhap ma so the moi (14 chu so, Enter/0 de huy): ");
+        if (strNewId.empty() || strNewId == "0") {
+            ConsoleView::printInfo("Da huy thao tac them the moi.");
+            ConsoleView::pauseScreen();
+            return;
+        }
 
         if (!UserController::isValidIdFormat(strNewId)) {
             ConsoleView::printError("Ma so the phai bao gom dung 14 chu so! Vui long nhap lai.");
@@ -143,7 +148,12 @@ void AdminController::addNewCard() {
     // Nhap ten chu the
     std::string strName;
     while (true) {
-        strName = ConsoleView::inputLine("Nhap ho ten chu tai khoan: ");
+        strName = ConsoleView::inputLine("Nhap ho ten chu tai khoan (Enter/0 de huy): ");
+        if (strName.empty() || strName == "0") {
+            ConsoleView::printInfo("Da huy thao tac them the moi.");
+            ConsoleView::pauseScreen();
+            return;
+        }
         size_t s = strName.find_first_not_of(" \t\r\n");
         if (s == std::string::npos) {
             ConsoleView::printError("Ho ten khong duoc de trong!");
@@ -161,7 +171,12 @@ void AdminController::addNewCard() {
     // Nhap so du ban dau (toi thieu 50k va la boi so cua 50k)
     long lBalance = 0;
     while (true) {
-        lBalance = ConsoleView::inputMoney("Nhap so du ban dau (toi thieu 50,000 VND, boi so 50k): ");
+        lBalance = ConsoleView::inputMoney("Nhap so du ban dau (toi thieu 50,000 VND, boi so 50k, 0 de huy): ");
+        if (lBalance == 0) {
+            ConsoleView::printInfo("Da huy thao tac them the moi.");
+            ConsoleView::pauseScreen();
+            return;
+        }
         if (lBalance < MIN_BALANCE_RESERVE) {
             ConsoleView::printError("So du ban dau phai tu " +
                                     std::to_string(MIN_BALANCE_RESERVE) + " VND tro len!");
@@ -233,7 +248,12 @@ void AdminController::deleteCard() {
         return;
     }
 
-    std::string strDelId = ConsoleView::inputLine("Nhap ma so the can xoa (14 chu so): ");
+    std::string strDelId = ConsoleView::inputLine("Nhap ma so the can xoa (14 chu so, Enter/0 de huy): ");
+    if (strDelId.empty() || strDelId == "0") {
+        ConsoleView::printInfo("Da huy thao tac xoa the.");
+        ConsoleView::pauseScreen();
+        return;
+    }
 
     if (!UserController::isValidIdFormat(strDelId)) {
         ConsoleView::printError("Ma so the phai bao gom dung 14 chu so!");
@@ -385,9 +405,9 @@ void AdminController::unlockCard() {
         return;
     }
 
-    std::string strUnlockId = ConsoleView::inputLine("Nhap ma so the can mo khoa (0 = Huy): ");
-    if (strUnlockId == "0") {
-        ConsoleView::printInfo("Da huy mo khoa.");
+    std::string strUnlockId = ConsoleView::inputLine("Nhap ma so the can mo khoa (Enter/0 de huy): ");
+    if (strUnlockId == "0" || strUnlockId.empty()) {
+        ConsoleView::printInfo("Da huy thao tac mo khoa.");
         ConsoleView::pauseScreen();
         return;
     }
