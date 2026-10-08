@@ -1,6 +1,6 @@
 # 📋 BẢNG THEO DÕI TIẾN ĐỘ CÔNG VIỆC DỰ ÁN (PROJECT TASK TRACKER)
 > **Dự án:** `DataStructure_ATM-Project` (Mô phỏng hệ thống ATM bằng C++)  
-> **Cập nhật lần cuối:** 08/10/2026 (Kết thúc Phase 2 - Thành viên C hoàn tất)  
+> **Cập nhật lần cuối:** 08/10/2026 (Hoàn tất Phase 3 - Toàn bộ mã nguồn & kiểm thử đã xong)  
 > **Quy chuẩn đánh giá trạng thái:** `DONE` (Đã hoàn thành) | `NOT DONE` (Chưa hoàn thành)
 
 ---
@@ -8,17 +8,17 @@
 ## 📊 I. TỔNG QUAN TIẾN ĐỘ TOÀN DỰ ÁN (DASHBOARD)
 
 ```mermaid
-pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án
-    "Đã Hoàn Thành (DONE)" : 29
-    "Chưa Hoàn Thành (NOT DONE)" : 9
+pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án (Kết thúc Phase 3)
+    "Đã Hoàn Thành (DONE)" : 35
+    "Chưa Hoàn Thành (NOT DONE)" : 5
 ```
 
 | Thành viên | Vai trò phụ trách | Tổng việc | Đã xong (DONE) | Còn lại (NOT DONE) | Tiến độ (%) |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **TRÍ (Thành viên B)** | Data Engineer / Memory & Storage Flow | 12 | **9** | **3** | **75%** |
-| **TUẤN (Thành viên A)** | Business Logic / User Flow & UI | 13 | **7** | **6** | **54%** |
-| **PHÁT (Thành viên C)** | Tech Lead / Core Controller & Admin Flow | 13 | **12** | **1** | **92.3%** |
-| **TỔNG CỘNG** | **Toàn đội ngũ 3 thành viên** | **38** | **29** | **9** | **76.3%** |
+| **TRÍ (Thành viên B)** | Data Engineer / Memory & Storage Flow | 12 | **10** | **2** | **83.3%** |
+| **TUẤN (Thành viên A)** | Business Logic / User Flow & UI | 13 | **11** | **2** | **84.6%** |
+| **PHÁT (Thành viên C)** | Tech Lead / Core Controller & Admin Flow | 15 | **14** | **1** | **93.3%** |
+| **TỔNG CỘNG** | **Toàn đội ngũ 3 thành viên** | **40** | **35** | **5** | **87.5%** |
 
 ---
 
@@ -40,8 +40,8 @@ pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án
 | **B07** | Phase 2 | Tầng `FileService`: I/O Tài khoản cá nhân | Đọc/Ghi/Xóa file `data/[ID].txt`; bẫy lỗi đọc họ tên có khoảng trắng bằng `std::getline()`. | `include/FileService.h`<br>`src/FileService.cpp` | **`DONE`** |
 | **B08** | Phase 2 | Tầng `FileService`: Ghi log giao dịch | Ghi nối thời gian thực vào `data/LichSu[ID].txt` (cờ `std::ios::app`) và đọc danh sách lịch sử. | `include/FileService.h`<br>`src/FileService.cpp` | **`DONE`** |
 | **B09** | Phase 2 | Cơ chế Auto-Recovery dữ liệu mẫu | Tự động tạo thư mục `data/` và sinh sẵn 3 Admin, 10 Thẻ từ cùng 10 file tài khoản mẫu nếu chưa có. | `src/FileService.cpp` | **`DONE`** |
-| **B10** | Phase 3 | Hỗ trợ ghép nối Chuyển tiền nguyên tử | Pair-programming cùng Tuấn kết nối `FileService::loadAccount` vào luồng chuyển tiền 2 đầu. | `src/UserController.cpp` | **`NOT DONE`** |
-| **B11** | Phase 4 | Kiểm thử rò rỉ bộ nhớ Valgrind | Chạy Valgrind kiểm tra ứng dụng hoàn chỉnh, đảm bảo `definitely lost: 0 bytes`. | `Makefile`<br>`test/` | **`NOT DONE`** |
+| **B10** | Phase 3 | Hỗ trợ ghép nối Chuyển tiền nguyên tử | Pair-programming cùng Tuấn kết nối `FileService::loadAccount` vào luồng chuyển tiền 2 đầu. | `src/UserController.cpp` | **`DONE`** |
+| **B11** | Phase 4 | Kiểm thử rò rỉ bộ nhớ Valgrind / ASan | Chạy Valgrind / ASan kiểm tra ứng dụng hoàn chỉnh, đảm bảo `definitely lost: 0 bytes`. | `Makefile`<br>`test/` | **`NOT DONE`** |
 | **B12** | Phase 4 | Tài liệu Báo cáo: CTDL & Big-O | Soạn thảo mục phân tích cấu trúc dữ liệu, so sánh ưu nhược điểm và bảng độ phức tạp Big-O cho file Word. | Báo cáo Word | **`NOT DONE`** |
 
 ---
@@ -58,10 +58,10 @@ pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án
 | **A05** | Phase 1 | Nghiệp vụ `UserController` trong RAM | Đăng nhập, đếm sai 3 lần để khóa thẻ trong RAM, ép đổi PIN mặc định `123456`, đổi PIN chủ động. | `include/UserController.h`<br>`src/UserController.cpp` | **`DONE`** |
 | **A06** | Phase 1 | Chuyển tiền nguyên tử In-memory | Triển khai `processTransfer()` có cơ chế Rollback hoàn tiền khi tài khoản nhận bị lỗi nạp tiền. | `src/UserController.cpp` | **`DONE`** |
 | **A07** | Phase 1 | Unit test Phân hệ User | Viết bộ kiểm thử ban đầu cho các hàm logic của User module. | `test/test_member_a.cpp` | **`DONE`** |
-| **A08** | Phase 2 | Vá Lỗi #1: Bỏ trừ tiền ảo khi chuyển khoản | Thay thế nhánh mock tự ý `withdraw()` bằng kiểm tra tài khoản nhận thật qua `FileService::loadAccount()`. | `src/UserController.cpp` | **`NOT DONE`** |
-| **A09** | Phase 2 | Vá Lỗi #2: Format thời gian biên lai | Thay thế chuỗi cứng `"Realtime"` bằng chuỗi thời gian thực lấy từ `Transaction::getCurrentTimestamp()`. | `src/UserController.cpp` | **`NOT DONE`** |
-| **A10** | Phase 3 | Kết nối FileService vào Rút tiền | Cập nhật số dư vào file `[ID].txt` và ghi vết giao dịch vào `LichSu[ID].txt` sau khi rút tiền thành công. | `src/UserController.cpp` | **`NOT DONE`** |
-| **A11** | Phase 3 | Kết nối FileService vào Đổi PIN & Xem LS | Lưu mã PIN mới vào `TheTu.txt`; nạp và in bảng lịch sử giao dịch từ `LichSu[ID].txt`. | `src/UserController.cpp` | **`NOT DONE`** |
+| **A08** | Phase 2 | Vá Lỗi #1: Bỏ trừ tiền ảo khi chuyển khoản | Thay thế nhánh mock tự ý `withdraw()` bằng kiểm tra tài khoản nhận thật qua `FileService::loadAccount()`. | `src/UserController.cpp` | **`DONE`** |
+| **A09** | Phase 2 | Vá Lỗi #2: Format thời gian biên lai | Thay thế chuỗi cứng `"Realtime"` bằng chuỗi thời gian thực lấy từ `Transaction::getCurrentTimestamp()`. | `src/UserController.cpp` | **`DONE`** |
+| **A10** | Phase 3 | Kết nối FileService vào Rút tiền | Cập nhật số dư vào file `[ID].txt` và ghi vết giao dịch vào `LichSu[ID].txt` sau khi rút tiền thành công. | `src/UserController.cpp` | **`DONE`** |
+| **A11** | Phase 3 | Kết nối FileService vào Đổi PIN & Xem LS | Lưu mã PIN mới vào `TheTu.txt`; nạp và in bảng lịch sử giao dịch từ `LichSu[ID].txt`. | `src/UserController.cpp` | **`DONE`** |
 | **A12** | Phase 4 | Soạn thảo Báo cáo Word | Hoàn thiện toàn bộ nội dung đồ án theo mẫu `Mau_BaoCao_DoAn.docx` của nhà trường. | `Project/Mau_BaoCao_DoAn.docx` | **`NOT DONE`** |
 | **A13** | Phase 4 | Quay & Biên tập Video Demo | Quay video thuyết minh chạy thực tế đầy đủ kịch bản Admin và User (tối thiểu 5.0 điểm chức năng). | Video MP4 | **`NOT DONE`** |
 
@@ -86,6 +86,8 @@ pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án
 | **C12** | Phase 2 | Điểm vào chính `src/main.cpp` | Viết `main()` gọi `FileService::initSampleData()` và kích hoạt `AtmController::run()`. | `src/main.cpp` | **`DONE`** |
 | **C14** | Phase 2 | Gia cố An toàn & Độ bền Dữ liệu | Cơ chế Atomic File Write, Anti-Leak Archive, Input Sanitization, Rate-Limiting chống Brute-Force. | `src/FileService.cpp`<br>`src/AtmController.cpp` | **`DONE`** |
 | **C15** | Phase 2 | Hoàn thiện tiêu chuẩn Production | Menu số nghiêm ngặt, Phân trang sao kê, Admin Audit Log, Cảnh báo xóa thẻ có số dư, Non-tty fallback. | `src/ConsoleView.cpp`<br>`src/UserController.cpp`<br>`test/test_phase_2_c.cpp` | **`DONE`** |
+| **C16** | Phase 3 | Gia cố Luồng Đăng nhập & Thoát an toàn | Bổ sung bẫy hủy đăng nhập an toàn bằng phím Enter hoặc 0 khi nhập ID và PIN không phạt số lần sai; khóa thẻ vào `KhoaThe.txt`. | `src/AtmController.cpp` | **`DONE`** |
+| **C17** | Phase 3 | Bộ Kiểm thử Tự động Tích hợp Phase 3 | Xây dựng bộ test `test/test_phase_3.cpp` (58 test cases) và target `make test_phase_3` bao quát 100% luồng User & giao dịch tài chính. | `test/test_phase_3.cpp`<br>`Makefile` | **`DONE`** |
 | **C13** | Phase 4 | Hoàn thiện Sơ đồ Kỹ thuật Báo cáo | Vẽ sơ đồ UML Lớp hoàn chỉnh và sơ đồ luồng dữ liệu kiến trúc đưa vào Báo cáo Word. | Báo cáo Word | **`NOT DONE`** |
 
 ---
@@ -103,10 +105,10 @@ gantt
     section Phase 2 (Storage & Admin)
     Trí (LinkedList & FileService)  :done, p2_b, 2026-10-05, 2d
     Phát (AtmController & Admin Flow):done, p2_c, 2026-10-06, 2d
-    Tuấn (Vá Lỗi #1, #2 & User UI)  :active, p2_a, 2026-10-06, 2d
+    Tuấn (Vá Lỗi #1, #2 & User UI)  :done, p2_a, 2026-10-06, 2d
     section Phase 3 (Tích Hợp Giao Dịch)
-    Tuấn & Trí (Ghép Chuyển tiền thật):p3_ab, 2026-10-08, 3d
+    Phát, Tuấn, Trí (Giao dịch thật & Test P3) :done, p3_all, 2026-10-08, 3d
     section Phase 4 (Báo Cáo & Demo)
-    Tất cả (Cross-test & Valgrind)   :p4_test, 2026-10-11, 2d
-    Tuấn & Phát (Word & Video Demo)  :p4_doc, 2026-10-12, 2d
+    Tất cả (Cross-test & Valgrind/ASan)   :p4_test, 2026-10-11, 2d
+    Tuấn & Phát (Word & Video Demo)       :p4_doc, 2026-10-12, 2d
 ```
