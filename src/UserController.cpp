@@ -1,5 +1,7 @@
 #include "UserController.h"
 #include "ConsoleView.h"
+#include "FileService.h"
+#include "Transaction.h"
 #include <iostream>
 #include <iomanip>
 #include <cctype>
@@ -124,6 +126,11 @@ bool UserController::processChangePin(Card& card, const std::string& strOldPin,
         return false;
     }
 
+    if (strNewPin == DEFAULT_PIN) {
+        strOutMessage = "Ma PIN moi khong duoc trung voi ma PIN mac dinh (" + DEFAULT_PIN + ")!";
+        return false;
+    }
+
     if (strNewPin == strOldPin) {
         strOutMessage = "Ma PIN moi phai khac voi ma PIN hien tai!";
         return false;
@@ -188,8 +195,16 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                 } else if (err == ERR_INSUFFICIENT_FUNDS) {
                     ConsoleView::printError("So du khong du! Can giu lai it nhat 50,000 VND so du toi thieu.");
                 } else {
+                    // Luu so du moi vao file [ID].txt tren dia
+                    FileService::saveAccount(acc);
+
+                    std::string strTime = getNowTimestamp();
+                    // Ghi log giao dich vao file LichSu[ID].txt
+                    Transaction tx(acc.getId(), WITHDRAW, lAmount, strTime, "Rut tien mat tai ATM");
+                    FileService::appendTransaction(acc.getId(), tx);
+
                     ConsoleView::printSuccess("Rut tien thanh cong! Vui long nhan tien tai khe.");
-                    ConsoleView::printReceipt(acc.getId(), "RUT TIEN MAT", lAmount, acc.getBalance(), "Realtime");
+                    ConsoleView::printReceipt(acc.getId(), "RUT TIEN MAT", lAmount, acc.getBalance(), strTime);
                 }
                 ConsoleView::pauseScreen();
                 break;
@@ -227,22 +242,60 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                     } else if (err == ERR_INSUFFICIENT_FUNDS) {
                         ConsoleView::printError("So du khong du de thuc hien giao dich chuyen tien!");
                     } else {
+                        std::string strTime = getNowTimestamp();
                         ConsoleView::printSuccess("Chuyen tien thanh cong den tai khoan " + strReceiverId + " (" + pReceiverMock->getName() + ")!");
-                        ConsoleView::printReceipt(acc.getId(), "CHUYEN TIEN", lAmount, acc.getBalance(), "Realtime");
+                        ConsoleView::printReceipt(acc.getId(), "CHUYEN TIEN", lAmount, acc.getBalance(), strTime);
                     }
                 } else {
-                    // Kiem tra rang buoc tai chinh khi chua ket noi Storage (Member B)
-                    ErrorCode err = acc.canWithdraw(lAmount);
+                    // Chuyen tien that: Nap thong tin tai khoan nguoi nhan tu dia
+                    Account receiverAcc;
+                    ErrorCode errLoad = FileService::loadAccount(strReceiverId, receiverAcc);
+                    if (errLoad != ERR_NONE) {
+                        ConsoleView::printError("Tai khoan nguoi nhan co ma so " + strReceiverId + " khong ton tai!");
+                        ConsoleView::pauseScreen();
+                        break;
+                    }
+
+                    // Hien thi xac nhan nguoi nhan
+                    std::cout << "\n  --------------------------------------------------\n";
+                    std::cout << "  Tai khoan nguoi nhan : " << receiverAcc.getId() << "\n";
+                    std::cout << "  Ten chu tai khoan    : " << receiverAcc.getName() << "\n";
+                    std::cout << "  So tien chuyen       : " << lAmount << " VND\n";
+                    std::cout << "  --------------------------------------------------\n";
+                    bool bConfirm = ConsoleView::confirmAction("Xac nhan thuc hien giao dich chuyen tien tren?");
+                    if (!bConfirm) {
+                        ConsoleView::printInfo("Da huy giao dich chuyen tien.");
+                        ConsoleView::pauseScreen();
+                        break;
+                    }
+
+                    ErrorCode err = UserController::processTransfer(acc, receiverAcc, lAmount);
                     if (err == ERR_INVALID_AMOUNT) {
                         ConsoleView::printError("So tien chuyen toi thieu phai tu 50,000 VND!");
                     } else if (err == ERR_NOT_MULTIPLE) {
                         ConsoleView::printError("So tien chuyen phai la boi so cua 50,000 VND!");
                     } else if (err == ERR_INSUFFICIENT_FUNDS) {
                         ConsoleView::printError("So du khong du de thuc hien giao dich chuyen tien!");
+                    } else if (err == ERR_SYSTEM_OVERFLOW) {
+                        ConsoleView::printError("Tai khoan nguoi nhan bi tran so du! Giao dich da duoc hoan tien.");
                     } else {
-                        acc.withdraw(lAmount);
-                        ConsoleView::printSuccess("Chuyen tien thanh cong den tai khoan " + strReceiverId + "!");
-                        ConsoleView::printReceipt(acc.getId(), "CHUYEN TIEN", lAmount, acc.getBalance(), "Realtime");
+                        // Luu ca 2 tai khoan ben vung tren dia
+                        FileService::saveAccount(acc);
+                        FileService::saveAccount(receiverAcc);
+
+                        std::string strTime = getNowTimestamp();
+                        // Ghi log giao dich nguoi gui
+                        Transaction senderTx(acc.getId(), TRANSFER, lAmount, strTime,
+                                             "Chuyen tien den " + receiverAcc.getId() + " - " + receiverAcc.getName());
+                        FileService::appendTransaction(acc.getId(), senderTx);
+
+                        // Ghi log giao dich nguoi nhan
+                        Transaction receiverTx(receiverAcc.getId(), RECEIVE, lAmount, strTime,
+                                               "Nhan tien tu " + acc.getId() + " - " + acc.getName());
+                        FileService::appendTransaction(receiverAcc.getId(), receiverTx);
+
+                        ConsoleView::printSuccess("Chuyen tien thanh cong den tai khoan " + strReceiverId + " (" + receiverAcc.getName() + ")!");
+                        ConsoleView::printReceipt(acc.getId(), "CHUYEN TIEN", lAmount, acc.getBalance(), strTime);
                     }
                 }
                 ConsoleView::pauseScreen();
@@ -250,7 +303,28 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
             }
             case 4: {
                 ConsoleView::printHeader("LICH SU GIAO DICH");
-                ConsoleView::printInfo("Lich su giao dich se duoc ket noi voi Storage Module cua Member B.");
+                LinkedList<Transaction> listTrans;
+                bool bLoaded = FileService::loadTransactions(acc.getId(), listTrans);
+                if (!bLoaded || listTrans.isEmpty()) {
+                    ConsoleView::printInfo("Hien tai tai khoan chua co giao dich nao duoc ghi nhan.");
+                } else {
+                    std::cout << std::left
+                              << std::setw(22) << "THOI GIAN"
+                              << std::setw(15) << "LOAI GD"
+                              << std::setw(16) << "SO TIEN"
+                              << "CHI TIET\n";
+                    std::cout << "----------------------------------------------------------------------\n";
+                    auto pCur = listTrans.getHead();
+                    while (pCur != nullptr) {
+                        std::cout << std::left
+                                  << std::setw(22) << pCur->_data.getTimestamp()
+                                  << std::setw(15) << pCur->_data.getTypeName()
+                                  << std::right << std::setw(12) << pCur->_data.getAmount() << " VND  "
+                                  << std::left << pCur->_data.getDetail() << "\n";
+                        pCur = pCur->_pNext;
+                    }
+                    std::cout << "----------------------------------------------------------------------\n";
+                }
                 ConsoleView::pauseScreen();
                 break;
             }

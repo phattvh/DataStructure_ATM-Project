@@ -88,8 +88,14 @@ Transaction Transaction::parseFromFileLine(const std::string& strId, const std::
     }
 
     std::string strTimestamp = tokens[0];
-    int iType = std::stoi(tokens[1]);
-    long lAmount = std::stol(tokens[2]);
+    int iType = 1;
+    long lAmount = 0;
+    try {
+        iType = std::stoi(tokens[1]);
+        lAmount = std::stol(tokens[2]);
+    } catch (...) {
+        return Transaction(strId, WITHDRAW, 0, strTimestamp, strLine);
+    }
     std::string strDetail = tokens[3];
 
     TransactionType eType = WITHDRAW;

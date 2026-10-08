@@ -262,10 +262,13 @@ ErrorCode AtmController::deleteCardAccount(const std::string& strId) {
         return c.getId() == strId;
     });
 
-    // 3. Neu the dang trong danh sach khoa, xoa khoi danh sach khoa trong RAM
-    bool bWasLocked = this->_listLockedIds.removeIf([&](const std::string& id) {
+    // 3. Neu the dang trong danh sach khoa, xoa triet de khoi danh sach khoa trong RAM
+    bool bWasLocked = false;
+    while (this->_listLockedIds.removeIf([&](const std::string& id) {
         return id == strId;
-    });
+    })) {
+        bWasLocked = true;
+    }
 
     // 4. Cap nhat cac tap tin tren dia
     FileService::saveCards(this->_listCards);
@@ -317,10 +320,10 @@ ErrorCode AtmController::unlockCardAccount(const std::string& strId) {
         return ERR_ID_NOT_FOUND;
     }
 
-    // 2. Xoa khoi danh sach ID khoa trong RAM
-    this->_listLockedIds.removeIf([&](const std::string& id) {
+    // 2. Xoa khoi danh sach ID khoa trong RAM (xoa triet de moi ban sao)
+    while (this->_listLockedIds.removeIf([&](const std::string& id) {
         return id == strId;
-    });
+    })) {}
 
     // 3. Dat lai so lan sai va co khoa tren Card
     pCard->unlockCard();
@@ -416,8 +419,13 @@ void AtmController::processUserLogin() {
 
     if (!bAuth) {
         if (bOutLocked) {
-            this->_listLockedIds.addTail(strId);
-            FileService::appendLockedCard(strId);
+            auto pExistingLock = this->_listLockedIds.findIf([&](const std::string& id) {
+                return id == strId;
+            });
+            if (pExistingLock == nullptr) {
+                this->_listLockedIds.addTail(strId);
+                FileService::appendLockedCard(strId);
+            }
             FileService::saveCards(this->_listCards);
             ConsoleView::printError("Ban da nhap sai PIN 3 lan lien tiep! The da bi KHOA.");
         } else {

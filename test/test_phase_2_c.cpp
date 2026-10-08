@@ -294,6 +294,100 @@ void testAtmSessionLifecycle() {
     TEST_ASSERT(true, "Destructor cua AtmController thu hoi bo nho an toan khong crash");
 }
 
+/******************************************************************************
+ * 8. KIỂM THỬ CÁC BẢN VÁ TỪ CODE REVIEW (PRE-RELEASE FIXES)
+ ******************************************************************************/
+void testReviewBugFixes() {
+    std::cout << "\n======================================================\n";
+    std::cout << " 8. KIEM THU CAC BAN VA TU CODE REVIEW (FIXES)\n";
+    std::cout << "======================================================\n";
+
+    // 8.1 Chặn đổi mã PIN mới trùng mã PIN mặc định DEFAULT_PIN (123456)
+    {
+        Card card("10014504500001", "123456");
+        std::string strMsg;
+        bool bResDefault = UserController::processChangePin(card, "123456", "123456", "123456", strMsg);
+        TEST_ASSERT(!bResDefault, "Chan doi PIN moi ve ma mac dinh 123456");
+        TEST_ASSERT(strMsg.find(DEFAULT_PIN) != std::string::npos, "Thong bao loi co chua DEFAULT_PIN");
+
+        bool bResValid = UserController::processChangePin(card, "123456", "654321", "654321", strMsg);
+        TEST_ASSERT(bResValid, "Doi sang ma PIN hop le (654321) thanh cong");
+        TEST_ASSERT(card.getPin() == "654321", "Ma PIN moi da duoc cap nhat vao the");
+
+        bool bResBackToDefault = UserController::processChangePin(card, "654321", "123456", "123456", strMsg);
+        TEST_ASSERT(!bResBackToDefault, "Chan doi PIN nguoc ve ma mac dinh 123456");
+        TEST_ASSERT(strMsg.find(DEFAULT_PIN) != std::string::npos, "Thong bao loi bao trung DEFAULT_PIN");
+    }
+
+    // 8.2 An toàn biệt lệ khi parse dòng lịch sử giao dịch bị lỗi/hỏng (Bug C2)
+    {
+        bool bNoThrow = true;
+        try {
+            // Dòng sai định dạng số (chữ cái thay vì số nguyên)
+            Transaction tx1 = Transaction::parseFromFileLine("10014504500001", "2026-10-08 10:00:00\tabc\txyz\tLoi corrupt");
+            TEST_ASSERT(tx1.getAmount() == 0, "Dòng corrupt amount duoc fallback an toan ve 0");
+
+            // Dòng thiếu trường dữ liệu
+            Transaction tx2 = Transaction::parseFromFileLine("10014504500001", "2026-10-08 10:00:00\t1");
+            TEST_ASSERT(tx2.getAmount() == 0, "Dòng thieu tokens duoc fallback an toan");
+        } catch (...) {
+            bNoThrow = false;
+        }
+        TEST_ASSERT(bNoThrow, "Transaction::parseFromFileLine an toan tuyet doi khong throw unhandled exception");
+    }
+
+    // 8.3 Mở khóa thẻ loại bỏ triệt để mọi bản ghi trùng lặp (Bug M3)
+    {
+        AtmController atm;
+        atm.initData();
+        std::string strDupId = "10014504506666";
+        atm.addCardAccount(strDupId, "Nguoi Dung Test Dup", 300000, "VND");
+
+        // Giả lập thẻ bị khoá
+        auto pCard = atm.getCards().findIf([&](const Card& c) {
+            return c.getId() == strDupId;
+        });
+        if (pCard != nullptr) {
+            pCard->setLocked(true);
+            // Ghi đúp 2 lần vào danh sách khóa
+            FileService::appendLockedCard(strDupId);
+            FileService::appendLockedCard(strDupId);
+            atm.initData();
+
+            // Mở khóa
+            ErrorCode errUnlock = atm.unlockCardAccount(strDupId);
+            TEST_ASSERT(errUnlock == ERR_NONE, "Mo khoa the co duplicate ID thanh cong");
+
+            // Đảm bảo không còn bất kỳ bản sao nào trong RAM
+            int nCount = 0;
+            auto pCur = atm.getLockedIds().getHead();
+            while (pCur != nullptr) {
+                if (pCur->_data == strDupId) {
+                    nCount++;
+                }
+                pCur = pCur->_pNext;
+            }
+            TEST_ASSERT(nCount == 0, "Khong con bat ky ban sao nao cua ID trong danh sach khoa");
+        }
+        atm.deleteCardAccount(strDupId);
+        std::filesystem::remove("data/LichSu" + strDupId + ".txt");
+    }
+
+    // 8.4 Kiểm thử tính toàn vẹn số dư trong chuyển tiền (Bảo toàn tổng tài sản)
+    {
+        Account accSender("10014504500001", "Nguoi Gui", 1000000, "VND");
+        Account accReceiver("10014504500002", "Nguoi Nhan", 500000, "VND");
+        long lTotalBefore = accSender.getBalance() + accReceiver.getBalance();
+
+        ErrorCode err = UserController::processTransfer(accSender, accReceiver, 200000);
+        TEST_ASSERT(err == ERR_NONE, "Chuyen tien hop le giua 2 tai khoan thanh cong");
+        TEST_ASSERT(accSender.getBalance() == 800000, "So du nguoi gui giam dung 200,000 VND");
+        TEST_ASSERT(accReceiver.getBalance() == 700000, "So du nguoi nhan tang dung 200,000 VND");
+        long lTotalAfter = accSender.getBalance() + accReceiver.getBalance();
+        TEST_ASSERT(lTotalBefore == lTotalAfter, "Tong so du he thong duoc bao toan tuyet doi (Khong mat tien)");
+    }
+}
+
 int main() {
     std::cout << "##############################################################\n";
     std::cout << "#      BO KIEM THU CHUYEN SAU PHASE 2 - THANH VIEN C (PHAT)  #\n";
@@ -306,6 +400,7 @@ int main() {
     testAdminDeleteCard();
     testAdminUnlockCard();
     testAtmSessionLifecycle();
+    testReviewBugFixes();
 
     std::cout << "\n======================================================\n";
     std::cout << "             TONG KET KIEM THU PHASE 2 (PHAT)         \n";
