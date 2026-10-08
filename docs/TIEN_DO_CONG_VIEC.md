@@ -9,16 +9,16 @@
 
 ```mermaid
 pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án (Kết thúc Phase 3 & Khởi động Phase 4)
-    "Đã Hoàn Thành (DONE)" : 36
-    "Chưa Hoàn Thành (NOT DONE)" : 4
+    "Đã Hoàn Thành (DONE)" : 37
+    "Chưa Hoàn Thành (NOT DONE)" : 3
 ```
 
 | Thành viên | Vai trò phụ trách | Tổng việc | Đã xong (DONE) | Còn lại (NOT DONE) | Tiến độ (%) |
 | :--- | :--- | :---: | :---: | :---: | :---: |
 | **TRÍ (Thành viên B)** | Data Engineer / Memory & Storage Flow | 12 | **11** | **1** | **91.7%** |
 | **TUẤN (Thành viên A)** | Business Logic / User Flow & UI | 13 | **11** | **2** | **84.6%** |
-| **PHÁT (Thành viên C)** | Tech Lead / Core Controller & Admin Flow | 15 | **14** | **1** | **93.3%** |
-| **TỔNG CỘNG** | **Toàn đội ngũ 3 thành viên** | **40** | **36** | **4** | **90.0%** |
+| **PHÁT (Thành viên C)** | Tech Lead / Core Controller & Admin Flow | 15 | **15** | **0** | **100.0%** |
+| **TỔNG CỘNG** | **Toàn đội ngũ 3 thành viên** | **40** | **37** | **3** | **92.5%** |
 
 ---
 
@@ -88,7 +88,7 @@ pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án (Kết thúc Phase 3
 | **C15** | Phase 2 | Hoàn thiện tiêu chuẩn Production | Menu số nghiêm ngặt, Phân trang sao kê, Admin Audit Log, Cảnh báo xóa thẻ có số dư, Non-tty fallback. | `src/ConsoleView.cpp`<br>`src/UserController.cpp`<br>`test/test_phase_2_c.cpp` | **`DONE`** |
 | **C16** | Phase 3 | Gia cố Luồng Đăng nhập & Thoát an toàn | Bổ sung bẫy hủy đăng nhập an toàn bằng phím Enter hoặc 0 khi nhập ID và PIN không phạt số lần sai; khóa thẻ vào `KhoaThe.txt`. | `src/AtmController.cpp` | **`DONE`** |
 | **C17** | Phase 3 | Bộ Kiểm thử Tự động Tích hợp Phase 3 | Xây dựng bộ test `test/test_phase_3.cpp` (58 test cases) và target `make test_phase_3` bao quát 100% luồng User & giao dịch tài chính. | `test/test_phase_3.cpp`<br>`Makefile` | **`DONE`** |
-| **C13** | Phase 4 | Hoàn thiện Sơ đồ Kỹ thuật Báo cáo | Vẽ sơ đồ UML Lớp hoàn chỉnh và sơ đồ luồng dữ liệu kiến trúc đưa vào Báo cáo Word. | Báo cáo Word | **`NOT DONE`** |
+| **C13** | Phase 4 | Hoàn thiện Sơ đồ Kỹ thuật Báo cáo | Vẽ sơ đồ UML Lớp hoàn chỉnh và sơ đồ luồng dữ liệu kiến trúc đưa vào Báo cáo Word. | `docs/07_so_do_uml_va_luong_du_lieu.md` | **`DONE`** |
 
 ---
 
