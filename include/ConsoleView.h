@@ -175,7 +175,8 @@ public:
                              const std::string& strAction,
                              long lAmount,
                              long lRemainingBalance,
-                             const std::string& strTimestamp);
+                             const std::string& strTimestamp,
+                             const std::string& strCurrency = "VND");
 
     /**********************************************************
      * @Description Hien thi thong tin chi tiet tai khoan (phien ban doc lap)

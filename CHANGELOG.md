@@ -2,6 +2,41 @@
 
 Tài liệu này ghi lại toàn bộ lịch sử thay đổi, thiết kế kỹ thuật, sửa lỗi bảo mật và nâng cấp mã nguồn được thực hiện trên nhánh `phat` và nhánh tích hợp `fix`.
 
+## [2.0.0] - 2026-10-08 (Phase 2 Integration, Adversarial Hardening & Production Release Ready)
+
+Hoàn thành tích hợp 100% Phase 2 giữa 3 thành viên (Member A - Tuấn, Member B - Trí, Member C - Phát) trên nhánh `fix`, trải qua 3 vòng Code Review chuyên sâu và gia cố độ bền:
+
+### 🛡️ Gia cố Bảo mật & Phòng chống Tấn công Phản biện (Adversarial Hardening)
+- **Triệt tiêu Signed Integer Underflow / Undefined Behavior**:
+  - `Account::canWithdraw()` kiểm tra `this->_lBalance < lAmount` trước khi tính toán hiệu số, ngăn chặn hoàn toàn việc truyền số tiền cực lớn (`LONG_MAX`) vượt qua bước kiểm tra số dư.
+- **Kiểm soát Tương thích Tiền tệ (Cross-Currency Transfer Protection)**:
+  - `UserController::processTransfer()` chặn chuyển tiền chéo loại tiền tệ (`VND` vs `USD`), trả về mã lỗi `ERR_INVALID_FORMAT` và hiển thị cảnh báo thân thiện.
+  - `ConsoleView::printReceipt()` và bảng lịch sử giao dịch hỗ trợ hiển thị đơn vị tiền tệ linh hoạt theo thuộc tính tài khoản (`acc.getCurrency()`).
+- **Chặn Chuyển Tiền Đến Tài Khoản Đang Bị Khóa (`KhoaThe.txt`)**:
+  - `UserController::runUserSession()` kiểm tra ID người nhận đối chiếu với `KhoaThe.txt` ngay khi nhập số tài khoản, ngăn chặn việc đóng băng tiền của người gửi.
+- **Chống Lỗi Hồi Sinh Thẻ/Tài Khoản Đã Bị Xóa (Account Resurrection Guard)**:
+  - `AtmController::processUserMenu()` chỉ lưu tài khoản và thẻ nếu tài khoản vẫn tồn tại trong RAM và tệp trên đĩa chưa bị xóa bởi Admin.
+- **Cơ Chế Hủy Thao Tác Đổi Mã PIN (Cancelable PIN Change)**:
+  - Cho phép người dùng nhập `0` hoặc nhấn Enter (chuỗi rỗng) để hủy thao tác đổi PIN và quay lại menu chính an toàn.
+- **Bảo Vệ Tính Toàn Vẹn Tệp & Tránh Rò Rỉ Dữ Liệu**:
+  - Chống Delimiter Injection: Chặn ký tự `'|'`, `'\n'`, `'\r'` trong tên chủ thẻ.
+  - Chống Orphan File Collision: Kiểm tra `fs::exists()` trước khi tạo tệp tài khoản mới.
+  - Tự động lưu trữ (Archive `.bak`) tệp lịch sử khi tái sử dụng ID thẻ cũ để bảo vệ quyền riêng tư của chủ thẻ mới.
+  - Ghi tệp nguyên tử (Atomic Write qua `.tmp` và `rename`) cho toàn bộ thao tác cập nhật dữ liệu.
+
+### 🏛️ Chuẩn hóa Kiến trúc & Quy chuẩn Lập trình (Coding Standards)
+- **Hợp nhất Kiến trúc Phân hệ Admin**:
+  - Tích hợp lớp `AdminController` do Member A phát triển vào `AtmController::processAdminLogin()`, loại bỏ 100% mã chết (*dead code*).
+- **Bộ Phân Giải Lịch Sử Giao Dịch Đa Định Dạng (Dual-Format Transaction Parser)**:
+  - `Transaction::parseFromFileLine()` nhận diện linh hoạt cả định dạng đặc tả 5 trường (`ID | TypeName | Amount | Timestamp | Detail`) và định dạng nội bộ 4 trường của Member B, sử dụng `findNthChar` bảo toàn trọn vẹn mô tả có chứa ký tự `'|'`.
+- **Tuân thủ 100% HCMUE C++ Coding Standard V2**:
+  - Chuẩn hóa 100% truy xuất thuộc tính thành viên bằng tiền tố `this->` (Rule 17) trong toàn bộ các lớp.
+  - Áp dụng đầy đủ Hungarian Notation (Rule 3), hằng số chữ hoa (Rule 4) và RAII giải phóng tài nguyên tệp/bộ nhớ (Rule 18).
+
+### 🧪 Hệ thống Kiểm thử Toàn diện (100% Pass)
+- Mở rộng bộ kiểm thử `test_phase_2_c` lên 106 test case phủ kín 12 nhóm nghiệp vụ.
+- Toàn bộ 7 bộ test suite (`test_runner`, `test_phase_2_a`, `test_phase_2_b`, `test_phase_2_c`, `test_member_a`, `test_member_c`, `test_ac`) vượt qua 100% với 0 cảnh báo biên dịch (`-Wall -Wextra`).
+
 ---
 
 ## [1.2.0] - 2026-10-04 (Branch Fix: Tích hợp Hợp nhất & Vá Lỗ hổng Sâu)

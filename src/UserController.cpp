@@ -225,7 +225,7 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                         FileService::appendTransaction(acc.getId(), tx);
 
                         ConsoleView::printSuccess("Rut tien thanh cong! Vui long nhan tien tai khe.");
-                        ConsoleView::printReceipt(acc.getId(), "RUT TIEN MAT", lAmount, acc.getBalance(), strTime);
+                        ConsoleView::printReceipt(acc.getId(), "RUT TIEN MAT", lAmount, acc.getBalance(), strTime, acc.getCurrency());
                     }
                 }
                 ConsoleView::pauseScreen();
@@ -277,7 +277,7 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                     } else {
                         std::string strTime = getNowTimestamp();
                         ConsoleView::printSuccess("Chuyen tien thanh cong den tai khoan " + strReceiverId + " (" + pReceiverMock->getName() + ")!");
-                        ConsoleView::printReceipt(acc.getId(), "CHUYEN TIEN", lAmount, acc.getBalance(), strTime);
+                        ConsoleView::printReceipt(acc.getId(), "CHUYEN TIEN", lAmount, acc.getBalance(), strTime, acc.getCurrency());
                     }
                 } else {
                     // Chuyen tien that: Nap thong tin tai khoan nguoi nhan tu dia
@@ -293,7 +293,7 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                     std::cout << "\n  --------------------------------------------------\n";
                     std::cout << "  Tai khoan nguoi nhan : " << receiverAcc.getId() << "\n";
                     std::cout << "  Ten chu tai khoan    : " << receiverAcc.getName() << "\n";
-                    std::cout << "  So tien chuyen       : " << lAmount << " VND\n";
+                    std::cout << "  So tien chuyen       : " << lAmount << " " << acc.getCurrency() << "\n";
                     std::cout << "  --------------------------------------------------\n";
                     bool bConfirm = ConsoleView::confirmAction("Xac nhan thuc hien giao dich chuyen tien tren?");
                     if (!bConfirm) {
@@ -340,7 +340,7 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                             FileService::appendTransaction(receiverAcc.getId(), receiverTx);
 
                             ConsoleView::printSuccess("Chuyen tien thanh cong den tai khoan " + strReceiverId + " (" + receiverAcc.getName() + ")!");
-                            ConsoleView::printReceipt(acc.getId(), "CHUYEN TIEN", lAmount, acc.getBalance(), strTime);
+                            ConsoleView::printReceipt(acc.getId(), "CHUYEN TIEN", lAmount, acc.getBalance(), strTime, acc.getCurrency());
                         }
                     }
                 }
@@ -383,8 +383,8 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                                 std::cout << std::left
                                           << std::setw(22) << pCur->_data.getTimestamp()
                                           << std::setw(15) << pCur->_data.getTypeName()
-                                          << std::right << std::setw(12) << pCur->_data.getAmount() << " VND  "
-                                          << std::left << pCur->_data.getDetail() << "\n";
+                                          << std::right << std::setw(12) << pCur->_data.getAmount() << " " << std::left << std::setw(5) << acc.getCurrency()
+                                          << pCur->_data.getDetail() << "\n";
                             }
                             pCur = pCur->_pNext;
                             iIdx++;

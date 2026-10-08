@@ -391,12 +391,13 @@ void ConsoleView::printReceipt(const std::string& strId,
                              const std::string& strAction,
                              long lAmount,
                              long lRemainingBalance,
-                             const std::string& strTimestamp) {
+                             const std::string& strTimestamp,
+                             const std::string& strCurrency) {
     std::cout << ANSI_CYAN << ANSI_BOLD << "\n============ BIEN LAI GIAO DICH ============\n" << ANSI_RESET;
     std::cout << "  Ma tai khoan : " << strId << "\n";
     std::cout << "  Loai GD      : " << strAction << "\n";
-    std::cout << "  So tien GD   : " << ANSI_YELLOW << ANSI_BOLD << lAmount << " VND" << ANSI_RESET << "\n";
-    std::cout << "  So du con lai: " << ANSI_GREEN << ANSI_BOLD << lRemainingBalance << " VND" << ANSI_RESET << "\n";
+    std::cout << "  So tien GD   : " << ANSI_YELLOW << ANSI_BOLD << lAmount << " " << strCurrency << ANSI_RESET << "\n";
+    std::cout << "  So du con lai: " << ANSI_GREEN << ANSI_BOLD << lRemainingBalance << " " << strCurrency << ANSI_RESET << "\n";
     std::cout << "  Thoi gian    : " << strTimestamp << "\n";
     std::cout << ANSI_CYAN << ANSI_BOLD << "============================================\n" << ANSI_RESET;
 }
