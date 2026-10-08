@@ -159,10 +159,15 @@ void AdminController::addNewCard() {
             ConsoleView::printError("Ho ten khong duoc de trong!");
             continue;
         }
-        if (strName.find('|') != std::string::npos ||
-            strName.find('\n') != std::string::npos ||
-            strName.find('\r') != std::string::npos) {
-            ConsoleView::printError("Ho ten khong duoc chua ky tu dac biet ('|', xuong dong)!");
+        bool bHasInvalidChar = false;
+        for (unsigned char c : strName) {
+            if (c < 32 || c == 127 || c == '|' || c == 27) {
+                bHasInvalidChar = true;
+                break;
+            }
+        }
+        if (bHasInvalidChar) {
+            ConsoleView::printError("Ho ten khong duoc chua ky tu dac biet, ky tu dieu khien hoac ANSI escape!");
             continue;
         }
         break;
@@ -190,9 +195,27 @@ void AdminController::addNewCard() {
         break;
     }
 
-    // Nhap loai tien te
-    std::string strCurrency = ConsoleView::inputLine("Don vi tien te (Enter de chon VND): ");
-    if (strCurrency.empty()) strCurrency = "VND";
+    // Nhap loai tien te (kiem tra dinh dang 3-5 chu cai viet hoa)
+    std::string strCurrency;
+    while (true) {
+        strCurrency = ConsoleView::inputLine("Don vi tien te (Enter de chon VND): ");
+        if (strCurrency.empty()) {
+            strCurrency = "VND";
+            break;
+        }
+        bool bValidCurr = (strCurrency.length() >= 3 && strCurrency.length() <= 5);
+        for (char c : strCurrency) {
+            if (!std::isupper(static_cast<unsigned char>(c))) {
+                bValidCurr = false;
+                break;
+            }
+        }
+        if (!bValidCurr) {
+            ConsoleView::printError("Don vi tien te khong hop le (chi chap nhan 3-5 chu cai viet hoa, vi du: VND, USD)!");
+            continue;
+        }
+        break;
+    }
 
     // Xac nhan truoc khi tao
     std::cout << "\n  Thong tin the moi:\n";

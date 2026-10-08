@@ -57,6 +57,7 @@ compile_commands.json
 *.log
 *.bak
 *.swp
+data/.system_initialized
 
 # vcpkg
 vcpkg_installed/
