@@ -94,7 +94,11 @@ test_phase_3: $(OBJS) $(TEST_PHASE3_SRC) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(OBJS) $(TEST_PHASE3_SRC) -o $(TEST_PHASE3_BIN)
 	./$(TEST_PHASE3_BIN)
 
+test_asan: $(SRCS) $(TEST_PHASE3_SRC) | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -fsanitize=address,undefined -g $(SRCS) $(TEST_PHASE3_SRC) -o $(BUILD_DIR)/test_asan
+	./$(BUILD_DIR)/test_asan
+
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all app test test_c test_a test_ac test_runner test_phase_2 test_phase_2_a test_phase_2_c test_phase_3 clean
+.PHONY: all app test test_c test_a test_ac test_runner test_phase_2 test_phase_2_a test_phase_2_c test_phase_3 test_asan clean

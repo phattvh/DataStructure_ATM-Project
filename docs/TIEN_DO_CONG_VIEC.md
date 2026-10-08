@@ -8,17 +8,17 @@
 ## 📊 I. TỔNG QUAN TIẾN ĐỘ TOÀN DỰ ÁN (DASHBOARD)
 
 ```mermaid
-pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án (Kết thúc Phase 3)
-    "Đã Hoàn Thành (DONE)" : 35
-    "Chưa Hoàn Thành (NOT DONE)" : 5
+pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án (Kết thúc Phase 3 & Khởi động Phase 4)
+    "Đã Hoàn Thành (DONE)" : 36
+    "Chưa Hoàn Thành (NOT DONE)" : 4
 ```
 
 | Thành viên | Vai trò phụ trách | Tổng việc | Đã xong (DONE) | Còn lại (NOT DONE) | Tiến độ (%) |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **TRÍ (Thành viên B)** | Data Engineer / Memory & Storage Flow | 12 | **10** | **2** | **83.3%** |
+| **TRÍ (Thành viên B)** | Data Engineer / Memory & Storage Flow | 12 | **11** | **1** | **91.7%** |
 | **TUẤN (Thành viên A)** | Business Logic / User Flow & UI | 13 | **11** | **2** | **84.6%** |
 | **PHÁT (Thành viên C)** | Tech Lead / Core Controller & Admin Flow | 15 | **14** | **1** | **93.3%** |
-| **TỔNG CỘNG** | **Toàn đội ngũ 3 thành viên** | **40** | **35** | **5** | **87.5%** |
+| **TỔNG CỘNG** | **Toàn đội ngũ 3 thành viên** | **40** | **36** | **4** | **90.0%** |
 
 ---
 
@@ -41,7 +41,7 @@ pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án (Kết thúc Phase 3
 | **B08** | Phase 2 | Tầng `FileService`: Ghi log giao dịch | Ghi nối thời gian thực vào `data/LichSu[ID].txt` (cờ `std::ios::app`) và đọc danh sách lịch sử. | `include/FileService.h`<br>`src/FileService.cpp` | **`DONE`** |
 | **B09** | Phase 2 | Cơ chế Auto-Recovery dữ liệu mẫu | Tự động tạo thư mục `data/` và sinh sẵn 3 Admin, 10 Thẻ từ cùng 10 file tài khoản mẫu nếu chưa có. | `src/FileService.cpp` | **`DONE`** |
 | **B10** | Phase 3 | Hỗ trợ ghép nối Chuyển tiền nguyên tử | Pair-programming cùng Tuấn kết nối `FileService::loadAccount` vào luồng chuyển tiền 2 đầu. | `src/UserController.cpp` | **`DONE`** |
-| **B11** | Phase 4 | Kiểm thử rò rỉ bộ nhớ Valgrind / ASan | Chạy Valgrind / ASan kiểm tra ứng dụng hoàn chỉnh, đảm bảo `definitely lost: 0 bytes`. | `Makefile`<br>`test/` | **`NOT DONE`** |
+| **B11** | Phase 4 | Kiểm thử rò rỉ bộ nhớ Valgrind / ASan | Chạy Valgrind / ASan kiểm tra ứng dụng hoàn chỉnh, đảm bảo `definitely lost: 0 bytes`. | `Makefile`<br>`test/` | **`DONE`** |
 | **B12** | Phase 4 | Tài liệu Báo cáo: CTDL & Big-O | Soạn thảo mục phân tích cấu trúc dữ liệu, so sánh ưu nhược điểm và bảng độ phức tạp Big-O cho file Word. | Báo cáo Word | **`NOT DONE`** |
 
 ---
