@@ -19,13 +19,13 @@ Card::Card()
 
 Card::Card(const std::string& strId, const std::string& strPin)
     : _strId(strId),
-      _strPin(isValidPinFormat(strPin) ? strPin : DEFAULT_PIN),
+      _strPin(strPin),
       _iFailedAttempts(0),
       _bIsLocked(false) {}
 
 Card::Card(const std::string& strId, const std::string& strPin, bool bIsLocked)
     : _strId(strId),
-      _strPin(isValidPinFormat(strPin) ? strPin : DEFAULT_PIN),
+      _strPin(strPin),
       _iFailedAttempts(0),
       _bIsLocked(bIsLocked) {}
 
