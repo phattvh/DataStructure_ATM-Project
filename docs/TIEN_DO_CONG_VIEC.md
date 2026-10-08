@@ -84,6 +84,8 @@ pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án
 | **C10** | Phase 2 | Hiện thực Vòng lặp Menu chính | Vòng lặp ứng dụng: Điều hướng Menu Đăng nhập Admin, Đăng nhập User, Thoát chương trình dọn RAM. | `src/AtmController.cpp` | **`DONE`** |
 | **C11** | Phase 2 | Hiện thực Phân hệ Quản trị Admin | 4 chức năng: Xem danh sách thẻ, Thêm thẻ (sinh 2 file), Xóa thẻ (xóa file ID), Mở khóa thẻ bị khóa. | `src/AtmController.cpp` | **`DONE`** |
 | **C12** | Phase 2 | Điểm vào chính `src/main.cpp` | Viết `main()` gọi `FileService::initSampleData()` và kích hoạt `AtmController::run()`. | `src/main.cpp` | **`DONE`** |
+| **C14** | Phase 2 | Gia cố An toàn & Độ bền Dữ liệu | Cơ chế Atomic File Write, Anti-Leak Archive, Input Sanitization, Rate-Limiting chống Brute-Force. | `src/FileService.cpp`<br>`src/AtmController.cpp` | **`DONE`** |
+| **C15** | Phase 2 | Hoàn thiện tiêu chuẩn Production | Menu số nghiêm ngặt, Phân trang sao kê, Admin Audit Log, Cảnh báo xóa thẻ có số dư, Non-tty fallback. | `src/ConsoleView.cpp`<br>`src/UserController.cpp`<br>`test/test_phase_2_c.cpp` | **`DONE`** |
 | **C13** | Phase 4 | Hoàn thiện Sơ đồ Kỹ thuật Báo cáo | Vẽ sơ đồ UML Lớp hoàn chỉnh và sơ đồ luồng dữ liệu kiến trúc đưa vào Báo cáo Word. | Báo cáo Word | **`NOT DONE`** |
 
 ---

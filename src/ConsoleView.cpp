@@ -108,6 +108,22 @@ std::string ConsoleView::inputPassword(const std::string& strPrompt, std::istrea
         return "";
     }
 
+#ifndef _WIN32
+    // Neu dau vao khong phai terminal truc tiep (vi du chay test tu dong qua pipe),
+    // doc truc tiep tu std::cin de tranh xung dot bo dem voi read(STDIN_FILENO)
+    if (!isatty(STDIN_FILENO)) {
+        std::string strPass = "";
+        if (std::getline(std::cin, strPass)) {
+            size_t s = strPass.find_first_not_of(" \t\r\n");
+            if (s != std::string::npos) {
+                return strPass.substr(s, strPass.find_last_not_of(" \t\r\n") - s + 1);
+            }
+            return "";
+        }
+        return "";
+    }
+#endif
+
     std::string strPassword = "";
 
 #ifdef _WIN32
