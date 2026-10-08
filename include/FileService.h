@@ -132,6 +132,15 @@ public:
      * @return void
      **********************************************************/
     static void initSampleData();
+
+    /**********************************************************
+     * @Description Ghi noi nhat ky kiem toan quan tri vao data/AdminLog.txt
+     * Format: <Timestamp>|<Action>|<Detail>
+     * @param strAction Hanh dong (ADD_CARD, DELETE_CARD, UNLOCK_CARD, v.v.)
+     * @param strDetail Chi tiet hanh dong
+     * @return true neu ghi thanh cong
+     **********************************************************/
+    static bool appendAdminLog(const std::string& strAction, const std::string& strDetail);
 };
 
 #endif // FILESERVICE_H_INCLUDED_

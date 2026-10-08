@@ -242,11 +242,11 @@ long ConsoleView::inputMoney(const std::string& strPrompt, std::istream& inStrea
     }
 }
 
-int ConsoleView::inputMenuChoice(int iMin, int iMax, const std::string& strPrompt) {
+int ConsoleView::inputMenuChoice(int iMin, int iMax, const std::string& strPrompt, std::istream& inStream) {
     while (true) {
         std::cout << strPrompt << std::flush;
         std::string strLine;
-        if (!std::getline(std::cin, strLine)) {
+        if (!std::getline(inStream, strLine)) {
             return iMin;
         }
 
@@ -258,12 +258,37 @@ int ConsoleView::inputMenuChoice(int iMin, int iMax, const std::string& strPromp
         size_t iEnd = strLine.find_last_not_of(" \t\r\n");
         std::string strTrimmed = strLine.substr(iStart, iEnd - iStart + 1);
 
-        try {
-            int iChoice = std::stoi(strTrimmed);
-            if (iChoice >= iMin && iChoice <= iMax) {
-                return iChoice;
+        bool bStrictDigits = true;
+        size_t iCheckStart = 0;
+        if (strTrimmed[0] == '-' || strTrimmed[0] == '+') {
+            if (strTrimmed.length() == 1) {
+                bStrictDigits = false;
             }
-            ConsoleView::printError("Lua chon ngoai pham vi hop le! Vui long chon lai.");
+            iCheckStart = 1;
+        }
+        for (size_t i = iCheckStart; i < strTrimmed.length(); ++i) {
+            if (!std::isdigit(static_cast<unsigned char>(strTrimmed[i]))) {
+                bStrictDigits = false;
+                break;
+            }
+        }
+
+        if (!bStrictDigits) {
+            ConsoleView::printError("Vui long nhap so hop le!");
+            continue;
+        }
+
+        try {
+            size_t idx = 0;
+            int iChoice = std::stoi(strTrimmed, &idx);
+            if (idx == strTrimmed.length()) {
+                if (iChoice >= iMin && iChoice <= iMax) {
+                    return iChoice;
+                }
+                ConsoleView::printError("Lua chon ngoai pham vi hop le! Vui long chon lai.");
+            } else {
+                ConsoleView::printError("Vui long nhap so hop le!");
+            }
         } catch (...) {
             ConsoleView::printError("Vui long nhap so hop le!");
         }

@@ -92,7 +92,8 @@ public:
      * @param strPrompt Loi nhac nhap
      * @return So nguyen lua chon hop le
      **********************************************************/
-    static int inputMenuChoice(int iMin, int iMax, const std::string& strPrompt);
+    static int inputMenuChoice(int iMin, int iMax, const std::string& strPrompt,
+                               std::istream& inStream = std::cin);
 
     /**********************************************************
      * @Description Nhap mot dong chuoi van ban co khoang trang

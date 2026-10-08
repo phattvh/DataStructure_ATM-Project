@@ -402,3 +402,15 @@ void FileService::initSampleData() {
         }
     }
 }
+
+bool FileService::appendAdminLog(const std::string& strAction, const std::string& strDetail) {
+    ensureDataDirExists();
+    std::string strPath = DATA_DIR + "AdminLog.txt";
+    std::ofstream outFile(strPath, std::ios::app);
+    if (!outFile.is_open()) {
+        return false;
+    }
+    outFile << getNowTimestamp() << "|" << strAction << "|" << strDetail << "\n";
+    outFile.close();
+    return true;
+}

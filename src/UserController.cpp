@@ -5,6 +5,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cctype>
+#include <algorithm>
 
 bool UserController::isValidPinFormat(const std::string& strPin) {
     return Card::isValidPinFormat(strPin);
@@ -335,25 +336,76 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                 bool bLoaded = FileService::loadTransactions(acc.getId(), listTrans);
                 if (!bLoaded || listTrans.isEmpty()) {
                     ConsoleView::printInfo("Hien tai tai khoan chua co giao dich nao duoc ghi nhan.");
+                    ConsoleView::pauseScreen();
                 } else {
-                    std::cout << std::left
-                              << std::setw(22) << "THOI GIAN"
-                              << std::setw(15) << "LOAI GD"
-                              << std::setw(16) << "SO TIEN"
-                              << "CHI TIET\n";
-                    std::cout << "----------------------------------------------------------------------\n";
-                    auto pCur = listTrans.getHead();
-                    while (pCur != nullptr) {
+                    const int PAGE_SIZE = 5;
+                    int iTotalItems = listTrans.getSize();
+                    int iTotalPages = (iTotalItems + PAGE_SIZE - 1) / PAGE_SIZE;
+                    int iCurrentPage = 1;
+
+                    bool bViewing = true;
+                    while (bViewing) {
+                        ConsoleView::clearScreen();
+                        ConsoleView::printHeader("LICH SU GIAO DICH - TAI KHOAN: " + acc.getId());
+                        std::cout << "  Trang " << iCurrentPage << " / " << iTotalPages 
+                                  << " (Tong cong: " << iTotalItems << " giao dich)\n";
+                        std::cout << "----------------------------------------------------------------------\n";
                         std::cout << std::left
-                                  << std::setw(22) << pCur->_data.getTimestamp()
-                                  << std::setw(15) << pCur->_data.getTypeName()
-                                  << std::right << std::setw(12) << pCur->_data.getAmount() << " VND  "
-                                  << std::left << pCur->_data.getDetail() << "\n";
-                        pCur = pCur->_pNext;
+                                  << std::setw(22) << "THOI GIAN"
+                                  << std::setw(15) << "LOAI GD"
+                                  << std::setw(16) << "SO TIEN"
+                                  << "CHI TIET\n";
+                        std::cout << "----------------------------------------------------------------------\n";
+
+                        int iStartIndex = (iCurrentPage - 1) * PAGE_SIZE;
+                        int iEndIndex = std::min(iStartIndex + PAGE_SIZE, iTotalItems);
+                        int iIdx = 0;
+                        auto pCur = listTrans.getHead();
+                        while (pCur != nullptr) {
+                            if (iIdx >= iStartIndex && iIdx < iEndIndex) {
+                                std::cout << std::left
+                                          << std::setw(22) << pCur->_data.getTimestamp()
+                                          << std::setw(15) << pCur->_data.getTypeName()
+                                          << std::right << std::setw(12) << pCur->_data.getAmount() << " VND  "
+                                          << std::left << pCur->_data.getDetail() << "\n";
+                            }
+                            pCur = pCur->_pNext;
+                            iIdx++;
+                        }
+                        std::cout << "----------------------------------------------------------------------\n";
+
+                        if (iTotalPages == 1) {
+                            ConsoleView::pauseScreen();
+                            bViewing = false;
+                        } else {
+                            std::cout << "  Dieu huong: [N] Trang sau | [P] Trang truoc | [0] Quay lai menu\n";
+                            std::string strNav = ConsoleView::inputLine("  Nhap lua chon: ");
+                            size_t s1 = strNav.find_first_not_of(" \t\r\n");
+                            std::string strClean = (s1 == std::string::npos) ? "" : strNav.substr(s1, strNav.find_last_not_of(" \t\r\n") - s1 + 1);
+
+                            if (strClean == "0" || strClean.empty()) {
+                                bViewing = false;
+                            } else if (strClean == "N" || strClean == "n") {
+                                if (iCurrentPage < iTotalPages) {
+                                    iCurrentPage++;
+                                } else {
+                                    ConsoleView::printWarning("Ban dang o trang cuoi cung!");
+                                    ConsoleView::pauseScreen();
+                                }
+                            } else if (strClean == "P" || strClean == "p") {
+                                if (iCurrentPage > 1) {
+                                    iCurrentPage--;
+                                } else {
+                                    ConsoleView::printWarning("Ban dang o trang dau tien!");
+                                    ConsoleView::pauseScreen();
+                                }
+                            } else {
+                                ConsoleView::printError("Lua chon khong hop le!");
+                                ConsoleView::pauseScreen();
+                            }
+                        }
                     }
-                    std::cout << "----------------------------------------------------------------------\n";
                 }
-                ConsoleView::pauseScreen();
                 break;
             }
             case 5: {

@@ -488,6 +488,75 @@ void testAdversarialHardening() {
     }
 }
 
+void testFinalProductionHardening() {
+    std::cout << "\n======================================================\n";
+    std::cout << " 10. KIEM THU GIA CO CUOI CUNG (FINAL PRODUCTION POLISHING)\n";
+    std::cout << "======================================================\n";
+
+    // 10.1 Kiem tra bat loi nhap chuoi ky tu du trong menu (Strict Numeric Menu Input)
+    {
+        std::istringstream iss("1abc\nxyz\n  \n2\n");
+        int iChoice = ConsoleView::inputMenuChoice(1, 3, "", iss);
+        TEST_ASSERT(iChoice == 2, "inputMenuChoice tu choi cac chuoi '1abc', 'xyz', khoang trang va nhan gia tri 2");
+    }
+
+    // 10.2 Kiem tra tu choi va cham tap tin tai khoan mo coi (Orphan Account Collision)
+    {
+        AtmController atm;
+        atm.initData();
+
+        std::string strOrphanId = "10014504508888";
+        // Tao thu cong file tai khoan mo coi tren dia ma khong co trong danh sach the
+        std::ofstream fout("data/" + strOrphanId + ".txt");
+        fout << strOrphanId << "\nOrphan User\n500000\nVND\n";
+        fout.close();
+
+        // Admin co gang them the co ID trung voi file mo coi tren dia
+        ErrorCode errOrphan = atm.addCardAccount(strOrphanId, "New Card Holder", 100000, "VND");
+        TEST_ASSERT(errOrphan == ERR_ID_EXISTS, "addCardAccount tu choi de file tai khoan mo coi tren dia (ERR_ID_EXISTS)");
+
+        // Don dep file mo coi
+        std::filesystem::remove("data/" + strOrphanId + ".txt");
+    }
+
+    // 10.3 Kiem thu nhat ky kiem toan quan tri (Admin Audit Log)
+    {
+        AtmController atm;
+        atm.initData();
+
+        std::string strAuditId = "10014504507777";
+        // 1. Them the moi
+        ErrorCode errAdd = atm.addCardAccount(strAuditId, "Audit Subject", 150000, "VND");
+        TEST_ASSERT(errAdd == ERR_NONE, "Them the audit thanh cong");
+
+        // 2. Kiem tra log AdminLog.txt da ghi lai ADD_CARD
+        std::ifstream finLog("data/AdminLog.txt");
+        TEST_ASSERT(finLog.is_open(), "File data/AdminLog.txt duoc tao tu dong");
+        std::string strLogContent((std::istreambuf_iterator<char>(finLog)),
+                                  std::istreambuf_iterator<char>());
+        finLog.close();
+
+        TEST_ASSERT(strLogContent.find("ADD_CARD") != std::string::npos, "AdminLog co ghi su kien ADD_CARD");
+        TEST_ASSERT(strLogContent.find(strAuditId) != std::string::npos, "AdminLog co ghi ma the " + strAuditId);
+
+        // 3. Xoa the va kiem tra log DELETE_CARD
+        ErrorCode errDel = atm.deleteCardAccount(strAuditId);
+        TEST_ASSERT(errDel == ERR_NONE, "Xoa the audit thanh cong");
+
+        std::ifstream finLog2("data/AdminLog.txt");
+        std::string strLogContent2((std::istreambuf_iterator<char>(finLog2)),
+                                   std::istreambuf_iterator<char>());
+        finLog2.close();
+
+        TEST_ASSERT(strLogContent2.find("DELETE_CARD") != std::string::npos, "AdminLog co ghi su kien DELETE_CARD");
+        TEST_ASSERT(strLogContent2.find("So du con lai: 150000 VND") != std::string::npos, "AdminLog ghi dung so du con lai truoc khi xoa");
+
+        // Don dep
+        std::filesystem::remove("data/LichSu" + strAuditId + ".txt");
+        std::filesystem::remove("data/AdminLog.txt");
+    }
+}
+
 int main() {
     std::cout << "##############################################################\n";
     std::cout << "#      BO KIEM THU CHUYEN SAU PHASE 2 - THANH VIEN C (PHAT)  #\n";
@@ -502,6 +571,7 @@ int main() {
     testAtmSessionLifecycle();
     testReviewBugFixes();
     testAdversarialHardening();
+    testFinalProductionHardening();
 
     std::cout << "\n======================================================\n";
     std::cout << "             TONG KET KIEM THU PHASE 2 (PHAT)         \n";

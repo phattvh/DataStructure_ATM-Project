@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <thread>
 #include <chrono>
+#include <filesystem>
 
 AtmController::AtmController()
     : _pCurrentAccount(nullptr),
@@ -96,11 +97,13 @@ void AtmController::processAdminLogin() {
     std::string strPass = ConsoleView::inputPassword("Mat khau Admin: ");
 
     if (this->authenticateAdmin(strUser, strPass)) {
+        FileService::appendAdminLog("ADMIN_LOGIN_SUCCESS", "Admin dang nhap thanh cong: " + strUser);
         ConsoleView::printSuccess("Dang nhap Quan tri vien thanh cong!");
         this->_eCurrentRole = ROLE_ADMIN;
         ConsoleView::pauseScreen();
         this->processAdminMenu();
     } else {
+        FileService::appendAdminLog("ADMIN_LOGIN_FAIL", "Dang nhap Admin that bai: " + strUser);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         ConsoleView::printError("Ten dang nhap hoac mat khau Admin khong chinh xac!");
         ConsoleView::pauseScreen();
@@ -179,11 +182,14 @@ ErrorCode AtmController::addCardAccount(const std::string& strId,
         return ERR_INVALID_FORMAT;
     }
 
-    // 3. Kiem tra trung lap ma ID trong he thong
+    // 3. Kiem tra trung lap ma ID trong he thong hoac tap tin tai khoan vo chu tren dia
     auto pExisting = this->_listCards.findIf([&](const Card& c) {
         return c.getId() == strId;
     });
     if (pExisting != nullptr) {
+        return ERR_ID_EXISTS;
+    }
+    if (std::filesystem::exists(DATA_DIR + strId + ".txt")) {
         return ERR_ID_EXISTS;
     }
 
@@ -210,6 +216,9 @@ ErrorCode AtmController::addCardAccount(const std::string& strId,
     if (!bSaved) {
         return ERR_FILE_NOT_FOUND;
     }
+
+    // 8. Ghi nhat ky kiem toan quan tri (Admin Audit Log)
+    FileService::appendAdminLog("ADD_CARD", "Them the " + strId + " (" + strName + "), So du: " + std::to_string(lInitialBalance) + " " + strCurrency);
 
     return ERR_NONE;
 }
@@ -266,6 +275,15 @@ ErrorCode AtmController::deleteCardAccount(const std::string& strId) {
         return ERR_ID_NOT_FOUND;
     }
 
+    // Doc thong tin so du truoc khi xoa de ghi log kiem toan
+    Account acc;
+    long lBal = 0;
+    std::string strAccName = "";
+    if (FileService::loadAccount(strId, acc) == ERR_NONE) {
+        lBal = acc.getBalance();
+        strAccName = acc.getName();
+    }
+
     // 2. Xoa the khoi danh sach the trong RAM (xoa triet de moi ban sao neu co)
     while (this->_listCards.removeIf([&](const Card& c) {
         return c.getId() == strId;
@@ -288,6 +306,14 @@ ErrorCode AtmController::deleteCardAccount(const std::string& strId) {
     // 5. Xoa tap tin thong tin tai khoan data/[ID].txt (giu lai file LichSu[ID].txt de tra soat)
     FileService::deleteAccountFile(strId);
 
+    // 6. Ghi nhat ky kiem toan quan tri (Admin Audit Log)
+    std::string strLogDetail = "Xoa the " + strId;
+    if (!strAccName.empty()) {
+        strLogDetail += " (" + strAccName + ")";
+    }
+    strLogDetail += ", So du con lai: " + std::to_string(lBal) + " VND";
+    FileService::appendAdminLog("DELETE_CARD", strLogDetail);
+
     return ERR_NONE;
 }
 
@@ -303,6 +329,20 @@ void AtmController::adminDeleteCard() {
     if (pCard == nullptr) {
         ConsoleView::printError("Khong tim thay the co ma so " + strId + " trong he thong!");
         return;
+    }
+
+    Account acc;
+    ErrorCode errAcc = FileService::loadAccount(strId, acc);
+    long lBalance = (errAcc == ERR_NONE) ? acc.getBalance() : 0;
+    std::string strName = (errAcc == ERR_NONE) ? acc.getName() : "Khong xac dinh";
+
+    if (lBalance > 0) {
+        std::cout << "\n";
+        ConsoleView::printWarning("==================== CANH BAO QUAN TRONG ====================");
+        ConsoleView::printWarning("Tai khoan the " + strId + " (" + strName + ") van con so du:");
+        ConsoleView::printWarning(">> SO DU HIEN TAI: " + std::to_string(lBalance) + " VND <<");
+        ConsoleView::printWarning("Hanh dong xoa the se vo hieu hoa tai khoan va huy bo so du tren!");
+        ConsoleView::printWarning("=============================================================\n");
     }
 
     bool bConfirm = ConsoleView::confirmAction("Ban co chac chan muon xoa the " + strId + "?");
@@ -340,6 +380,9 @@ ErrorCode AtmController::unlockCardAccount(const std::string& strId) {
     // 4. Luu thay doi ben vung vao disk
     FileService::saveLockedIds(this->_listLockedIds);
     FileService::saveCards(this->_listCards);
+
+    // 5. Ghi nhat ky kiem toan quan tri (Admin Audit Log)
+    FileService::appendAdminLog("UNLOCK_CARD", "Mo khoa the " + strId);
 
     return ERR_NONE;
 }
