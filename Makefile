@@ -12,7 +12,8 @@ SRCS = $(SRC_DIR)/ConsoleView.cpp \
        $(SRC_DIR)/UserController.cpp \
        $(SRC_DIR)/Admin.cpp \
        $(SRC_DIR)/Transaction.cpp \
-       $(SRC_DIR)/FileService.cpp
+       $(SRC_DIR)/FileService.cpp \
+       $(SRC_DIR)/AdminController.cpp
 
 OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
 
@@ -30,6 +31,10 @@ TEST_RUNNER_BIN = $(BUILD_DIR)/test_runner
 
 TEST_PHASE2_SRC = $(TEST_DIR)/test_phase_2_b.cpp
 TEST_PHASE2_BIN = $(BUILD_DIR)/test_phase_2_b
+
+TEST_PHASE2A_SRC = $(TEST_DIR)/test_phase_2_a.cpp
+TEST_PHASE2A_BIN = $(BUILD_DIR)/test_phase_2_a
+
 all: $(OBJS)
 
 #=======================================================================
@@ -42,7 +47,7 @@ $(BUILD_DIR):
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-test: test_c test_a test_ac test_runner test_phase_2
+test: test_c test_a test_ac test_runner test_phase_2 test_phase_2_a
 
 test_c: $(OBJS) $(TEST_C_SRC) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(OBJS) $(TEST_C_SRC) -o $(TEST_C_BIN)
@@ -64,7 +69,11 @@ test_phase_2: $(OBJS) $(TEST_PHASE2_SRC) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(OBJS) $(TEST_PHASE2_SRC) -o $(TEST_PHASE2_BIN)
 	./$(TEST_PHASE2_BIN)
 
+test_phase_2_a: $(OBJS) $(TEST_PHASE2A_SRC) | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(OBJS) $(TEST_PHASE2A_SRC) -o $(TEST_PHASE2A_BIN)
+	./$(TEST_PHASE2A_BIN)
+
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all test test_c test_a test_ac test_runner test_phase_2 clean
+.PHONY: all test test_c test_a test_ac test_runner test_phase_2 test_phase_2_a clean
