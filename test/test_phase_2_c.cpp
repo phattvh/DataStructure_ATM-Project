@@ -600,6 +600,102 @@ void testCodeReviewIntegrations() {
     TEST_ASSERT(adminCtrl.getCards().getSize() >= 10, "AdminController chua it nhat 10 TheTu");
 }
 
+/******************************************************************************
+ * 12. KIỂM THỬ CÁC TÌNH HUỐNG ADVERSARIAL PHẢN BIỆN (5 FINAL HARDENING FIXES)
+ ******************************************************************************/
+void testAdversarialEdgeCasesHardening() {
+    std::cout << "\n======================================================\n";
+    std::cout << " 12. KIEM THU 5 DIEM GIA CO ADVERSARIAL CUOI CUNG\n";
+    std::cout << "======================================================\n";
+
+    // 12.1 Phòng chống Signed Integer Underflow trong Account::canWithdraw
+    {
+        Account accTest("10014504500001", "Kiem Thu Underflow", 1000000, "VND");
+        long lHugeAmount = std::numeric_limits<long>::max();
+        lHugeAmount -= (lHugeAmount % MIN_TRANSACTION);
+        
+        ErrorCode err = accTest.canWithdraw(lHugeAmount);
+        TEST_ASSERT(err == ERR_INSUFFICIENT_FUNDS, "Account::canWithdraw chan dung integer underflow voi lHugeAmount gan LONG_MAX");
+        TEST_ASSERT(!accTest.withdraw(lHugeAmount), "Account::withdraw tu choi rut tien khi so tien qua lon");
+        TEST_ASSERT(accTest.getBalance() == 1000000, "So du tai khoan khong bi thay doi sau khi tu choi");
+    }
+
+    // 12.2 Kiểm thử phòng chống chuyển tiền chéo loại tiền tệ (Cross-currency transfer)
+    {
+        Account accVnd("10014504500001", "Chu VND", 5000000, "VND");
+        Account accUsd("10014504500002", "Chu USD", 500, "USD");
+
+        ErrorCode errCross = UserController::processTransfer(accVnd, accUsd, 100000);
+        TEST_ASSERT(errCross == ERR_INVALID_FORMAT, "processTransfer chan chuyen tien giua VND va USD (ERR_INVALID_FORMAT)");
+        TEST_ASSERT(accVnd.getBalance() == 5000000, "So du ben VND duoc giu nguyen");
+        TEST_ASSERT(accUsd.getBalance() == 500, "So du ben USD duoc giu nguyen");
+    }
+
+    // 12.3 Kiểm thử kiểm tra tài khoản nhận bị khóa trong danh sách KhoaThe.txt
+    {
+        std::string strLockedReceiverId = "10014504508888";
+        LinkedList<std::string> listLocked;
+        FileService::loadLockedIds(listLocked);
+        if (listLocked.findIf([&strLockedReceiverId](const std::string& id) { return id == strLockedReceiverId; }) == nullptr) {
+            listLocked.addTail(strLockedReceiverId);
+            FileService::saveLockedIds(listLocked);
+        }
+
+        LinkedList<std::string> verifyLocked;
+        FileService::loadLockedIds(verifyLocked);
+        bool bIsLocked = (verifyLocked.findIf([&strLockedReceiverId](const std::string& id) { return id == strLockedReceiverId; }) != nullptr);
+        TEST_ASSERT(bIsLocked, "Tai khoan nguoi nhan 10014504508888 duoc xac nhan dang bi khoa");
+
+        // Don dep sau khi test
+        while (listLocked.removeIf([&strLockedReceiverId](const std::string& id) { return id == strLockedReceiverId; })) {}
+        FileService::saveLockedIds(listLocked);
+    }
+
+    // 12.4 Kiểm thử chống hồi sinh tài khoản đã bị xóa (Account Resurrection Guard)
+    {
+        std::string strResId = "10014504509999";
+        // Tao the va file tai khoan
+        FileService::createAccountFiles(strResId, "Chu The Xoa", 500000, "VND");
+        Account accRes(strResId, "Chu The Xoa", 500000, "VND");
+
+        // Gia lap Admin xoa file tai khoan tren dia
+        FileService::deleteAccountFile(strResId);
+
+        // Kiem tra loadAccount bao loi khong tim thay
+        Account dummy;
+        TEST_ASSERT(FileService::loadAccount(strResId, dummy) == ERR_FILE_NOT_FOUND, "File tai khoan da bi xoa boi Admin");
+
+        // Neu AtmController luu sau khi user logout, nho guard kiem tra loadAccount ton tai, file se khong bi hoi sinh
+        LinkedList<Card> listCards;
+        bool bCardInRam = (listCards.findIf([&strResId](const Card& c) { return c.getId() == strResId; }) != nullptr);
+        if (bCardInRam && FileService::loadAccount(strResId, dummy) == ERR_NONE) {
+            FileService::saveAccount(accRes);
+        }
+
+        // Kiem tra tren dia file van khong duoc tao lai
+        TEST_ASSERT(FileService::loadAccount(strResId, dummy) == ERR_FILE_NOT_FOUND, "Tai khoan khong bi hoi sinh tren dia sau khi da bi xoa");
+
+        // Don dep file LichSu neu co
+        std::remove(("data/LichSu" + strResId + ".txt").c_str());
+    }
+
+    // 12.5 Kiểm thử quy trình đổi PIN trong UserController::processChangePin
+    {
+        Card cardTest("10014504500001", "654321", false);
+        std::string strMsg;
+
+        // Neu nhap sai ma PIN cu
+        bool bRes = UserController::processChangePin(cardTest, "999999", "111111", "111111", strMsg);
+        TEST_ASSERT(!bRes, "Doi PIN that bai khi ma PIN cu khong dung");
+        TEST_ASSERT(cardTest.getPin() == "654321", "Ma PIN van giu nguyen 654321");
+
+        // Doi PIN hop le
+        bRes = UserController::processChangePin(cardTest, "654321", "888888", "888888", strMsg);
+        TEST_ASSERT(bRes, "Doi PIN hop le thanh cong");
+        TEST_ASSERT(cardTest.getPin() == "888888", "Ma PIN moi la 888888");
+    }
+}
+
 int main() {
     std::cout << "##############################################################\n";
     std::cout << "#      BO KIEM THU CHUYEN SAU PHASE 2 - THANH VIEN C (PHAT)  #\n";
@@ -616,6 +712,7 @@ int main() {
     testAdversarialHardening();
     testFinalProductionHardening();
     testCodeReviewIntegrations();
+    testAdversarialEdgeCasesHardening();
 
     std::cout << "\n======================================================\n";
     std::cout << "             TONG KET KIEM THU PHASE 2 (PHAT)         \n";

@@ -50,7 +50,9 @@ ErrorCode Account::canWithdraw(long lAmount) const {
     if (lAmount % MIN_TRANSACTION != 0) {
         return ERR_NOT_MULTIPLE;
     }
-    if ((this->_lBalance - lAmount) < MIN_BALANCE_RESERVE) {
+    // Phong chong tran so nguyen (signed integer underflow / UB)
+    // khi lAmount rat lon (vi du LONG_MAX) vuot qua so du hien tai
+    if (this->_lBalance < lAmount || (this->_lBalance - lAmount) < MIN_BALANCE_RESERVE) {
         return ERR_INSUFFICIENT_FUNDS;
     }
     return ERR_NONE;

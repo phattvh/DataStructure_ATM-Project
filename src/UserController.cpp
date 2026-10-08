@@ -107,6 +107,10 @@ ErrorCode UserController::processTransfer(Account& senderAcc, Account& receiverA
         return ERR_SAME_ACCOUNT;
     }
 
+    if (senderAcc.getCurrency() != receiverAcc.getCurrency()) {
+        return ERR_INVALID_FORMAT;
+    }
+
     ErrorCode err = senderAcc.canWithdraw(lAmount);
     if (err != ERR_NONE) {
         return err;
@@ -244,6 +248,15 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                     break;
                 }
 
+                // Kiem tra tai khoan nguoi nhan co dang bi khoa hay khong
+                LinkedList<std::string> listLocked;
+                FileService::loadLockedIds(listLocked);
+                if (listLocked.findIf([&strReceiverId](const std::string& strId) { return strId == strReceiverId; }) != nullptr) {
+                    ConsoleView::printError("Tai khoan nguoi nhan co ma so " + strReceiverId + " hien dang bi khoa!");
+                    ConsoleView::pauseScreen();
+                    break;
+                }
+
                 long lAmount = ConsoleView::inputMoney("Nhap so tien muon chuyen (0 = Huy): ");
                 if (lAmount == 0) {
                     ConsoleView::printInfo("Da huy giao dich chuyen tien.");
@@ -259,6 +272,8 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                         ConsoleView::printError("So tien chuyen phai la boi so cua 50,000 VND!");
                     } else if (err == ERR_INSUFFICIENT_FUNDS) {
                         ConsoleView::printError("So du khong du de thuc hien giao dich chuyen tien!");
+                    } else if (err == ERR_INVALID_FORMAT) {
+                        ConsoleView::printError("Khong the chuyen tien giua hai tai khoan khac loai tien te!");
                     } else {
                         std::string strTime = getNowTimestamp();
                         ConsoleView::printSuccess("Chuyen tien thanh cong den tai khoan " + strReceiverId + " (" + pReceiverMock->getName() + ")!");
@@ -294,6 +309,8 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                         ConsoleView::printError("So tien chuyen phai la boi so cua 50,000 VND!");
                     } else if (err == ERR_INSUFFICIENT_FUNDS) {
                         ConsoleView::printError("So du khong du de thuc hien giao dich chuyen tien!");
+                    } else if (err == ERR_INVALID_FORMAT) {
+                        ConsoleView::printError("Khong the chuyen tien giua hai tai khoan khac loai tien te!");
                     } else if (err == ERR_SYSTEM_OVERFLOW) {
                         ConsoleView::printError("Tai khoan nguoi nhan bi tran so du! Giao dich da duoc hoan tien.");
                     } else {
@@ -410,8 +427,18 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
             }
             case 5: {
                 ConsoleView::printHeader("DOI MA PIN");
-                std::string strOldPin = ConsoleView::inputPassword("Nhap ma PIN hien tai: ");
-                std::string strNewPin = ConsoleView::inputPassword("Nhap ma PIN moi (6 so): ");
+                std::string strOldPin = ConsoleView::inputPassword("Nhap ma PIN hien tai (nhap 0 hoac Enter de huy): ");
+                if (strOldPin == "0" || strOldPin.empty()) {
+                    ConsoleView::printInfo("Da huy thao tac doi ma PIN.");
+                    ConsoleView::pauseScreen();
+                    break;
+                }
+                std::string strNewPin = ConsoleView::inputPassword("Nhap ma PIN moi (6 so, nhap 0 hoac Enter de huy): ");
+                if (strNewPin == "0" || strNewPin.empty()) {
+                    ConsoleView::printInfo("Da huy thao tac doi ma PIN.");
+                    ConsoleView::pauseScreen();
+                    break;
+                }
                 std::string strConfirmPin = ConsoleView::inputPassword("Nhap lai ma PIN moi: ");
 
                 std::string strMsg;
