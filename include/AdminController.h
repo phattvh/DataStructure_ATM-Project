@@ -86,9 +86,9 @@ public:
     void processAdminMenu();
 
     // Getters phuc vu kiem thu
-    const LinkedList<Admin>& getAdmins() const { return _listAdmins; }
-    const LinkedList<Card>& getCards() const { return _listCards; }
-    const LinkedList<std::string>& getLockedIds() const { return _listLockedIds; }
+    const LinkedList<Admin>& getAdmins() const { return this->_listAdmins; }
+    const LinkedList<Card>& getCards() const { return this->_listCards; }
+    const LinkedList<std::string>& getLockedIds() const { return this->_listLockedIds; }
 };
 
 #endif // ADMINCONTROLLER_H_INCLUDED_

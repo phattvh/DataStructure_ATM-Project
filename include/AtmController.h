@@ -10,6 +10,7 @@
 #include "FileService.h"
 #include "ConsoleView.h"
 #include "UserController.h"
+#include "AdminController.h"
 
 /******************************************************************************
  * @Description: Bo dieu phoi trung tam he thong ATM (AtmController)

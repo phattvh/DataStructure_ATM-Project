@@ -557,6 +557,49 @@ void testFinalProductionHardening() {
     }
 }
 
+/******************************************************************************
+ * 11. KIEM THU CAC BAN VA TU CODE REVIEW TOAN DIEN (PRE-RELEASE AUDIT)
+ ******************************************************************************/
+void testCodeReviewIntegrations() {
+    std::cout << "\n======================================================\n";
+    std::cout << " 11. KIEM THU DUAL-FORMAT TRANSACTION & ADMIN AUDIT FIXES\n";
+    std::cout << "======================================================\n";
+
+    // 11.1 Kiem thu Dual-Format Transaction Parser: Spec Format (docs/02_yeu_cau_va_pham_vi.md)
+    std::string strSpecWithdraw = "10014504500001 | RUT TIEN | 250000 | 2026-10-08 14:30:00 | Rut tien tai ATM";
+    Transaction tx1 = Transaction::parseFromFileLine("10014504500001", strSpecWithdraw);
+    TEST_ASSERT(tx1.getId() == "10014504500001", "Dual-Format: Parse dung ID tai khoan");
+    TEST_ASSERT(tx1.getType() == WITHDRAW, "Dual-Format: Parse dung loai WITHDRAW tu chuoi 'RUT TIEN'");
+    TEST_ASSERT(tx1.getAmount() == 250000, "Dual-Format: Parse dung so tien 250,000 VND");
+    TEST_ASSERT(tx1.getTimestamp() == "2026-10-08 14:30:00", "Dual-Format: Parse dung timestamp");
+    TEST_ASSERT(tx1.getDetail() == "Rut tien tai ATM", "Dual-Format: Parse dung detail");
+
+    // 11.2 Kiem thu Spec Format: Chuyen tien
+    std::string strSpecTransfer = "10014504500001|CHUYEN TIEN|500000|2026-10-08 15:00:00|Chuyen den 10014504500002";
+    Transaction tx2 = Transaction::parseFromFileLine("10014504500001", strSpecTransfer);
+    TEST_ASSERT(tx2.getType() == TRANSFER, "Dual-Format: Parse dung loai TRANSFER tu chuoi 'CHUYEN TIEN'");
+    TEST_ASSERT(tx2.getAmount() == 500000, "Dual-Format: Parse dung so tien 500,000 VND");
+
+    // 11.3 Kiem thu Spec Format: Nhan tien
+    std::string strSpecReceive = "10014504500002|NHAN TIEN|500000|2026-10-08 15:00:00|Nhan tu 10014504500001";
+    Transaction tx3 = Transaction::parseFromFileLine("10014504500002", strSpecReceive);
+    TEST_ASSERT(tx3.getType() == RECEIVE, "Dual-Format: Parse dung loai RECEIVE tu chuoi 'NHAN TIEN'");
+
+    // 11.4 Kiem thu Member B Internal Format van tuong thich 100%
+    std::string strMemberBLine = "2026-10-06 10:35:55|2|100000|Chuyen tien test Member B";
+    Transaction tx4 = Transaction::parseFromFileLine("10014504500001", strMemberBLine);
+    TEST_ASSERT(tx4.getType() == TRANSFER, "Dual-Format: Tuong thich 100% dinh dang Member B (Type = 2)");
+    TEST_ASSERT(tx4.getAmount() == 100000, "Dual-Format: Parse dung 100,000 VND tu dinh dang Member B");
+    TEST_ASSERT(tx4.getTimestamp() == "2026-10-06 10:35:55", "Dual-Format: Parse dung timestamp Member B");
+
+    // 11.5 Kiem thu AdminController duoc nap va chay an toan
+    AdminController adminCtrl;
+    bool bLoaded = adminCtrl.loadAllData();
+    TEST_ASSERT(bLoaded, "AdminController loadAllData() thanh cong");
+    TEST_ASSERT(adminCtrl.getAdmins().getSize() >= 3, "AdminController chua it nhat 3 Admin");
+    TEST_ASSERT(adminCtrl.getCards().getSize() >= 10, "AdminController chua it nhat 10 TheTu");
+}
+
 int main() {
     std::cout << "##############################################################\n";
     std::cout << "#      BO KIEM THU CHUYEN SAU PHASE 2 - THANH VIEN C (PHAT)  #\n";
@@ -572,6 +615,7 @@ int main() {
     testReviewBugFixes();
     testAdversarialHardening();
     testFinalProductionHardening();
+    testCodeReviewIntegrations();
 
     std::cout << "\n======================================================\n";
     std::cout << "             TONG KET KIEM THU PHASE 2 (PHAT)         \n";

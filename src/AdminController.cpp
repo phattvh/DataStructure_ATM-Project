@@ -3,9 +3,8 @@
  * @description: Hien thuc Bo dieu phoi Phan he Quan tri vien (Admin Module)
  *               Bao gom: Dang nhap Admin, Xem DS the, Them the, Xoa the, Mo khoa the.
  * (Phase 2 - Member A - Ngay 6-7)
- * Definition of Done: Admin them account moi sinh dung du 2 file [ID].txt
- * va [LichSuID].txt; xoa the chi xoa [ID].txt, giu LichSu; mo khoa the
- * xoa khoi KhoaThe.txt va reset failed attempts.
+ * Tuan thu chat che HCMUE C++ Coding Standard V2 (Rule 17: this->)
+ * Va tich hop cac co che bao mat & kiem toan nang cao.
  ******************************************************************************/
 
 #include "AdminController.h"
@@ -15,6 +14,9 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 //=============================================================================
 // Constructor
@@ -29,13 +31,13 @@ AdminController::AdminController() {
 //=============================================================================
 
 bool AdminController::loadAllData() {
-    _listAdmins.clear();
-    _listCards.clear();
-    _listLockedIds.clear();
+    this->_listAdmins.clear();
+    this->_listCards.clear();
+    this->_listLockedIds.clear();
 
-    bool bAdmins = FileService::loadAdmins(_listAdmins);
-    FileService::loadLockedIds(_listLockedIds);
-    bool bCards  = FileService::loadCards(_listCards, _listLockedIds);
+    bool bAdmins = FileService::loadAdmins(this->_listAdmins);
+    FileService::loadLockedIds(this->_listLockedIds);
+    bool bCards  = FileService::loadCards(this->_listCards, this->_listLockedIds);
 
     return bAdmins && bCards;
 }
@@ -46,7 +48,7 @@ bool AdminController::loadAllData() {
 
 bool AdminController::verifyAdmin(const std::string& strUser,
                                   const std::string& strPass) const {
-    const Admin* pAdmin = _listAdmins.findIf([&strUser](const Admin& a) {
+    const Admin* pAdmin = this->_listAdmins.findIf([&strUser](const Admin& a) {
         return a.getUsername() == strUser;
     });
     return (pAdmin != nullptr) && pAdmin->verifyPassword(strPass);
@@ -59,7 +61,7 @@ bool AdminController::verifyAdmin(const std::string& strUser,
 void AdminController::viewCardList() const {
     ConsoleView::printHeader("DANH SACH THE TU HE THONG");
 
-    if (_listCards.isEmpty()) {
+    if (this->_listCards.isEmpty()) {
         ConsoleView::printWarning("Hien khong co the tu nao trong he thong.");
         ConsoleView::pauseScreen();
         return;
@@ -72,13 +74,13 @@ void AdminController::viewCardList() const {
     std::cout << "\033[0m";
 
     int iIndex = 1;
-    auto pCur = _listCards.getHead();
+    auto pCur = this->_listCards.getHead();
     while (pCur != nullptr) {
         const Card& card = pCur->_data;
         std::string strId     = card.getId();
         bool        bIsLocked = card.isLocked();
 
-        const std::string* pLock = _listLockedIds.findIf([&strId](const std::string& id) {
+        const std::string* pLock = this->_listLockedIds.findIf([&strId](const std::string& id) {
             return id == strId;
         });
         if (pLock != nullptr) bIsLocked = true;
@@ -100,7 +102,7 @@ void AdminController::viewCardList() const {
     }
 
     std::cout << "\033[36m+-----+----------------+--------------------+\033[0m\n";
-    std::cout << "  Tong cong: " << _listCards.getSize() << " the\n";
+    std::cout << "  Tong cong: " << this->_listCards.getSize() << " the\n";
     ConsoleView::pauseScreen();
 }
 
@@ -121,13 +123,20 @@ void AdminController::addNewCard() {
             continue;
         }
 
-        const Card* pExist = _listCards.findIf([&strNewId](const Card& c) {
+        const Card* pExist = this->_listCards.findIf([&strNewId](const Card& c) {
             return c.getId() == strNewId;
         });
         if (pExist != nullptr) {
             ConsoleView::printError("Ma so the " + strNewId + " da ton tai trong he thong! Vui long nhap ID khac.");
             continue;
         }
+
+        // Chặn ghi đè tệp tin tài khoản mồ côi trên đĩa
+        if (fs::exists(DATA_DIR + strNewId + ".txt")) {
+            ConsoleView::printError("Tap tin tai khoan " + strNewId + ".txt da ton tai tren dia! Vui long chon ID khac.");
+            continue;
+        }
+
         break;
     }
 
@@ -135,20 +144,32 @@ void AdminController::addNewCard() {
     std::string strName;
     while (true) {
         strName = ConsoleView::inputLine("Nhap ho ten chu tai khoan: ");
-        if (strName.empty()) {
+        size_t s = strName.find_first_not_of(" \t\r\n");
+        if (s == std::string::npos) {
             ConsoleView::printError("Ho ten khong duoc de trong!");
+            continue;
+        }
+        if (strName.find('|') != std::string::npos ||
+            strName.find('\n') != std::string::npos ||
+            strName.find('\r') != std::string::npos) {
+            ConsoleView::printError("Ho ten khong duoc chua ky tu dac biet ('|', xuong dong)!");
             continue;
         }
         break;
     }
 
-    // Nhap so du ban dau
+    // Nhap so du ban dau (toi thieu 50k va la boi so cua 50k)
     long lBalance = 0;
     while (true) {
-        lBalance = ConsoleView::inputMoney("Nhap so du ban dau (toi thieu 50,000 VND): ");
+        lBalance = ConsoleView::inputMoney("Nhap so du ban dau (toi thieu 50,000 VND, boi so 50k): ");
         if (lBalance < MIN_BALANCE_RESERVE) {
             ConsoleView::printError("So du ban dau phai tu " +
                                     std::to_string(MIN_BALANCE_RESERVE) + " VND tro len!");
+            continue;
+        }
+        if (lBalance % MIN_TRANSACTION != 0) {
+            ConsoleView::printError("So du ban dau phai la boi so cua " +
+                                    std::to_string(MIN_TRANSACTION) + " VND!");
             continue;
         }
         break;
@@ -180,15 +201,18 @@ void AdminController::addNewCard() {
     }
 
     // Cap nhat RAM: them Card moi voi PIN mac dinh
-    _listCards.addTail(Card(strNewId, DEFAULT_PIN, false));
+    this->_listCards.addTail(Card(strNewId, DEFAULT_PIN, false));
 
     // Cap nhat file TheTu.txt
-    bool bSave = FileService::saveCards(_listCards);
+    bool bSave = FileService::saveCards(this->_listCards);
     if (!bSave) {
         ConsoleView::printError("Loi khi cap nhat TheTu.txt! Du lieu tren dia co the khong dong bo.");
         ConsoleView::pauseScreen();
         return;
     }
+
+    // Ghi nhat ky kiem toan Admin (Audit Log)
+    FileService::appendAdminLog("ADD_CARD", "Them the " + strNewId + " (" + strName + "), So du: " + std::to_string(lBalance) + " " + strCurrency);
 
     ConsoleView::printSuccess("Them tai khoan thanh cong! Ma the: " + strNewId);
     std::cout << "  + File data/" << strNewId        << ".txt da duoc tao.\n";
@@ -203,7 +227,7 @@ void AdminController::addNewCard() {
 void AdminController::deleteCard() {
     ConsoleView::printHeader("XOA TAI KHOAN THE TU");
 
-    if (_listCards.isEmpty()) {
+    if (this->_listCards.isEmpty()) {
         ConsoleView::printWarning("Khong co the nao trong he thong de xoa.");
         ConsoleView::pauseScreen();
         return;
@@ -217,7 +241,7 @@ void AdminController::deleteCard() {
         return;
     }
 
-    const Card* pExist = _listCards.findIf([&strDelId](const Card& c) {
+    const Card* pExist = this->_listCards.findIf([&strDelId](const Card& c) {
         return c.getId() == strDelId;
     });
 
@@ -227,9 +251,25 @@ void AdminController::deleteCard() {
         return;
     }
 
+    // Doc thong tin so du hien tai truoc khi xoa
+    Account acc;
+    ErrorCode errAcc = FileService::loadAccount(strDelId, acc);
+    long lBalance = (errAcc == ERR_NONE) ? acc.getBalance() : 0;
+    std::string strName = (errAcc == ERR_NONE) ? acc.getName() : "Khong xac dinh";
+
     std::cout << "\n  Thong tin the can xoa:\n";
     std::cout << "    Ma the    : " << strDelId << "\n";
+    std::cout << "    Chu the   : " << strName << "\n";
     std::cout << "    Trang thai: " << (pExist->isLocked() ? "Bi Khoa" : "Hoat dong") << "\n\n";
+
+    if (lBalance > 0) {
+        ConsoleView::printWarning("==================== CANH BAO QUAN TRONG ====================");
+        ConsoleView::printWarning("Tai khoan the " + strDelId + " (" + strName + ") van con so du:");
+        ConsoleView::printWarning(">> SO DU HIEN TAI: " + std::to_string(lBalance) + " VND <<");
+        ConsoleView::printWarning("Hanh dong xoa the se vo hieu hoa tai khoan va dong so du tren!");
+        ConsoleView::printWarning("=============================================================\n");
+    }
+
     std::cout << "  \033[33m[CANH BAO] Hanh dong nay se:\033[0m\n";
     std::cout << "    - Xoa the khoi danh sach TheTu.txt\n";
     std::cout << "    - Xoa file data/" << strDelId << ".txt\n";
@@ -241,19 +281,24 @@ void AdminController::deleteCard() {
         return;
     }
 
-    // Xoa khoi RAM
-    _listCards.removeIf([&strDelId](const Card& c) {
+    // Xoa triet de khoi RAM (moi ban sao neu co)
+    while (this->_listCards.removeIf([&strDelId](const Card& c) {
         return c.getId() == strDelId;
-    });
+    })) {}
 
-    // Neu the dang bi khoa, xoa khoi danh sach khoa
-    _listLockedIds.removeIf([&strDelId](const std::string& id) {
+    // Neu the dang bi khoa, xoa triet de khoi danh sach khoa trong RAM
+    bool bWasLocked = false;
+    while (this->_listLockedIds.removeIf([&strDelId](const std::string& id) {
         return id == strDelId;
-    });
+    })) {
+        bWasLocked = true;
+    }
 
     // Cap nhat TheTu.txt va KhoaThe.txt
-    FileService::saveCards(_listCards);
-    FileService::saveLockedIds(_listLockedIds);
+    FileService::saveCards(this->_listCards);
+    if (bWasLocked) {
+        FileService::saveLockedIds(this->_listLockedIds);
+    }
 
     // Xoa file [ID].txt (giu lai LichSu[ID].txt)
     bool bDelFile = FileService::deleteAccountFile(strDelId);
@@ -265,6 +310,15 @@ void AdminController::deleteCard() {
         std::cout << "  + Da xoa: data/" << strDelId << ".txt\n";
         std::cout << "  + Giu lai: data/LichSu" << strDelId << ".txt\n";
     }
+
+    // Ghi nhat ky kiem toan
+    std::string strDetail = "Xoa the " + strDelId;
+    if (!strName.empty()) {
+        strDetail += " (" + strName + ")";
+    }
+    strDetail += ", So du con lai: " + std::to_string(lBalance) + " VND";
+    FileService::appendAdminLog("DELETE_CARD", strDetail);
+
     ConsoleView::pauseScreen();
 }
 
@@ -275,9 +329,9 @@ void AdminController::deleteCard() {
 void AdminController::unlockCard() {
     ConsoleView::printHeader("MO KHOA THE TU");
 
-    if (_listLockedIds.isEmpty()) {
+    if (this->_listLockedIds.isEmpty()) {
         bool bAnyLocked = false;
-        auto pCur = _listCards.getHead();
+        auto pCur = this->_listCards.getHead();
         while (pCur != nullptr) {
             if (pCur->_data.isLocked()) {
                 bAnyLocked = true;
@@ -299,7 +353,7 @@ void AdminController::unlockCard() {
     std::cout << "\033[36m+-----+----------------+\033[0m\n";
 
     int iCount = 0;
-    auto pLockCur = _listLockedIds.getHead();
+    auto pLockCur = this->_listLockedIds.getHead();
     while (pLockCur != nullptr) {
         std::cout << "| " << std::left << std::setw(4) << (iCount + 1)
                   << "| \033[31m" << std::setw(15) << pLockCur->_data << "\033[0m|\n";
@@ -307,11 +361,11 @@ void AdminController::unlockCard() {
         pLockCur = pLockCur->_pNext;
     }
 
-    auto pCardCur = _listCards.getHead();
+    auto pCardCur = this->_listCards.getHead();
     while (pCardCur != nullptr) {
         if (pCardCur->_data.isLocked()) {
             const std::string& strLockedId = pCardCur->_data.getId();
-            const std::string* pInList = _listLockedIds.findIf([&strLockedId](const std::string& id) {
+            const std::string* pInList = this->_listLockedIds.findIf([&strLockedId](const std::string& id) {
                 return id == strLockedId;
             });
             if (pInList == nullptr) {
@@ -345,12 +399,12 @@ void AdminController::unlockCard() {
     }
 
     bool bFoundLocked = false;
-    const std::string* pLock = _listLockedIds.findIf([&strUnlockId](const std::string& id) {
+    const std::string* pLock = this->_listLockedIds.findIf([&strUnlockId](const std::string& id) {
         return id == strUnlockId;
     });
     if (pLock != nullptr) bFoundLocked = true;
 
-    Card* pCard = _listCards.findIf([&strUnlockId](const Card& c) {
+    Card* pCard = this->_listCards.findIf([&strUnlockId](const Card& c) {
         return c.getId() == strUnlockId;
     });
     if (pCard != nullptr && pCard->isLocked()) bFoundLocked = true;
@@ -372,14 +426,17 @@ void AdminController::unlockCard() {
         pCard->unlockCard();
     }
 
-    // 2. Xoa khoi KhoaThe.txt
-    _listLockedIds.removeIf([&strUnlockId](const std::string& id) {
+    // 2. Xoa triet de moi ban sao khoi KhoaThe.txt
+    while (this->_listLockedIds.removeIf([&strUnlockId](const std::string& id) {
         return id == strUnlockId;
-    });
-    FileService::saveLockedIds(_listLockedIds);
+    })) {}
+    FileService::saveLockedIds(this->_listLockedIds);
 
     // 3. Dong bo lai TheTu.txt
-    FileService::saveCards(_listCards);
+    FileService::saveCards(this->_listCards);
+
+    // 4. Ghi nhat ky kiem toan
+    FileService::appendAdminLog("UNLOCK_CARD", "Mo khoa the " + strUnlockId);
 
     ConsoleView::printSuccess("Mo khoa the " + strUnlockId + " thanh cong!");
     std::cout << "  + So lan nhap sai da reset ve 0.\n";
@@ -393,7 +450,7 @@ void AdminController::unlockCard() {
 
 bool AdminController::processAdminLogin() {
     // Dam bao du lieu duoc nap tu dia
-    loadAllData();
+    this->loadAllData();
 
     ConsoleView::printHeader("DANG NHAP QUAN TRI VIEN (ADMIN)");
     std::cout << "  (Nhap '0' de quay lai)\n\n";
@@ -404,11 +461,13 @@ bool AdminController::processAdminLogin() {
     std::string strPass = ConsoleView::inputPassword("Mat khau (hien thi dau *): ");
     if (strPass == "0") return false;
 
-    if (verifyAdmin(strUser, strPass)) {
+    if (this->verifyAdmin(strUser, strPass)) {
+        FileService::appendAdminLog("ADMIN_LOGIN_SUCCESS", "Admin dang nhap thanh cong: " + strUser);
         ConsoleView::printSuccess("Dang nhap Admin thanh cong! Chao mung, " + strUser + "!");
         ConsoleView::pauseScreen();
         return true;
     } else {
+        FileService::appendAdminLog("ADMIN_LOGIN_FAIL", "Dang nhap Admin that bai: " + strUser);
         ConsoleView::printError("Ten dang nhap hoac mat khau khong chinh xac!");
         ConsoleView::pauseScreen();
         return false;
@@ -431,10 +490,10 @@ void AdminController::processAdminMenu() {
         }
 
         switch (iChoice) {
-            case 1: viewCardList(); break;
-            case 2: addNewCard();   break;
-            case 3: deleteCard();   break;
-            case 4: unlockCard();   break;
+            case 1: this->viewCardList(); break;
+            case 2: this->addNewCard();   break;
+            case 3: this->deleteCard();   break;
+            case 4: this->unlockCard();   break;
             default:
                 ConsoleView::printError("Lua chon khong hop le!");
                 ConsoleView::pauseScreen();

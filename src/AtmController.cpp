@@ -101,7 +101,15 @@ void AtmController::processAdminLogin() {
         ConsoleView::printSuccess("Dang nhap Quan tri vien thanh cong!");
         this->_eCurrentRole = ROLE_ADMIN;
         ConsoleView::pauseScreen();
-        this->processAdminMenu();
+
+        // Tich hop module AdminController cua Member A vao luong he thong chinh
+        AdminController adminCtrl;
+        adminCtrl.loadAllData();
+        adminCtrl.processAdminMenu();
+
+        // Dong bo lai du lieu cua AtmController sau khi Admin cap nhat
+        this->initData();
+        this->cleanupSession();
     } else {
         FileService::appendAdminLog("ADMIN_LOGIN_FAIL", "Dang nhap Admin that bai: " + strUser);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -391,7 +399,19 @@ void AtmController::adminUnlockCard() {
     ConsoleView::clearScreen();
     ConsoleView::printHeader("MO KHOA THE TU");
 
-    if (this->_listLockedIds.isEmpty()) {
+    bool bAnyLocked = !this->_listLockedIds.isEmpty();
+    if (!bAnyLocked) {
+        auto pCur = this->_listCards.getHead();
+        while (pCur != nullptr) {
+            if (pCur->_data.isLocked()) {
+                bAnyLocked = true;
+                break;
+            }
+            pCur = pCur->_pNext;
+        }
+    }
+
+    if (!bAnyLocked) {
         ConsoleView::printInfo("Hien tai khong co the nao bi khoa trong he thong.");
         return;
     }
@@ -402,6 +422,20 @@ void AtmController::adminUnlockCard() {
     while (pCur != nullptr) {
         std::cout << "  " << iIndex++ << ". Ma the ID: \033[31m" << pCur->_data << "\033[0m\n";
         pCur = pCur->_pNext;
+    }
+
+    auto pCardCur = this->_listCards.getHead();
+    while (pCardCur != nullptr) {
+        if (pCardCur->_data.isLocked()) {
+            const std::string& strCardId = pCardCur->_data.getId();
+            const std::string* pInList = this->_listLockedIds.findIf([&strCardId](const std::string& id) {
+                return id == strCardId;
+            });
+            if (pInList == nullptr) {
+                std::cout << "  " << iIndex++ << ". Ma the ID: \033[31m" << strCardId << "\033[0m\n";
+            }
+        }
+        pCardCur = pCardCur->_pNext;
     }
     std::cout << "------------------------------------------------------\n";
 
@@ -425,6 +459,7 @@ void AtmController::adminUnlockCard() {
 // ============================================================================
 
 void AtmController::processUserLogin() {
+    this->cleanupSession(); // Dam bao phien cu duoc giai phong hoan toan truoc khi dang nhap
     ConsoleView::clearScreen();
     ConsoleView::printHeader("DANG NHAP KHACH HANG (USER)");
 
