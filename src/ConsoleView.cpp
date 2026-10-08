@@ -9,10 +9,22 @@
 #else
 #include <termios.h>
 #include <unistd.h>
+#include <signal.h>
+
+static struct termios g_savedTerm;
+static bool g_bSavedTermActive = false;
+
+static void linuxSignalHandler(int iSig) {
+    if (g_bSavedTermActive) {
+        tcsetattr(STDIN_FILENO, TCSANOW, &g_savedTerm);
+        g_bSavedTermActive = false;
+    }
+    _exit(128 + iSig);
+}
 
 /**********************************************************
  * @Description Lop RAII tu dong bat va tat terminal raw mode
- * dam bao khong lam hong trang thai terminal khi ket thuc
+ * dam bao khong lam hong trang thai terminal khi ket thuc hoac khi bi ngat Ctrl+C
  **********************************************************/
 class LinuxTerminalRawGuard {
 private:
@@ -22,6 +34,11 @@ private:
 public:
     LinuxTerminalRawGuard() : _bActive(false) {
         if (tcgetattr(STDIN_FILENO, &this->_oldTerm) >= 0) {
+            g_savedTerm = this->_oldTerm;
+            g_bSavedTermActive = true;
+            signal(SIGINT, linuxSignalHandler);
+            signal(SIGTERM, linuxSignalHandler);
+
             struct termios newTerm = this->_oldTerm;
             newTerm.c_lflag &= ~(ICANON | ECHO);
             newTerm.c_cc[VMIN] = 1;
@@ -35,6 +52,7 @@ public:
     ~LinuxTerminalRawGuard() {
         if (this->_bActive) {
             tcsetattr(STDIN_FILENO, TCSADRAIN, &this->_oldTerm);
+            g_bSavedTermActive = false;
         }
     }
 

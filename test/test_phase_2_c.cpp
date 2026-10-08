@@ -388,6 +388,106 @@ void testReviewBugFixes() {
     }
 }
 
+/******************************************************************************
+ * 9. KIỂM THỬ GIA CỐ BẢO MẬT & ĐỘ BỀN DỮ LIỆU (ADVERSARIAL HARDENING FIXES)
+ ******************************************************************************/
+void testAdversarialHardening() {
+    std::cout << "\n======================================================\n";
+    std::cout << " 9. KIEM THU GIA CO ADVERSARIAL HARDENING FIXES\n";
+    std::cout << "======================================================\n";
+
+    // 9.1 Phòng chống lỗi Silent Balance Annihilation (Cắt trắng số dư về 0)
+    {
+        std::string strCorruptId = "10014504509991";
+        std::ofstream fout("data/" + strCorruptId + ".txt");
+        fout << strCorruptId << "\n";
+        fout << "Khach Hang Loi\n";
+        fout << "5000000_VND\n"; // Loi du lieu dinh dang so
+        fout << "VND\n";
+        fout.close();
+
+        Account accTest;
+        ErrorCode err = FileService::loadAccount(strCorruptId, accTest);
+        TEST_ASSERT(err == ERR_INVALID_FORMAT, "File so du bi loi dinh dang tra ve ERR_INVALID_FORMAT");
+        TEST_ASSERT(accTest.getBalance() == 0, "Account khong duoc nap vao he thong");
+
+        std::filesystem::remove("data/" + strCorruptId + ".txt");
+    }
+
+    // 9.2 Bền vững mã PIN: Lưu ngay tức thì xuống TheTu.txt không đợi đăng xuất
+    {
+        std::string strPinCardId = "10014504500001";
+        bool bUpdated = FileService::updateCardPin(strPinCardId, "654321");
+        TEST_ASSERT(bUpdated, "updateCardPin truc tiep tren dia thanh cong");
+
+        // Doc lai TheTu.txt doc lap tu dia de kiem chung tinh ben vung
+        LinkedList<std::string> listLocked;
+        FileService::loadLockedIds(listLocked);
+        LinkedList<Card> listCardsDisk;
+        FileService::loadCards(listCardsDisk, listLocked);
+
+        auto pCard = listCardsDisk.findIf([&](const Card& c) {
+            return c.getId() == strPinCardId;
+        });
+        TEST_ASSERT(pCard != nullptr && pCard->getPin() == "654321", "TheTu.txt tren dia da luu ma PIN moi ngay lap tuc");
+
+        // Tra lai ma PIN cu de bao toan bo test
+        FileService::updateCardPin(strPinCardId, "123456");
+    }
+
+    // 9.3 Tách biệt lịch sử kiểm toán chống rò rỉ thông tin khi tái cấp thẻ cũ
+    {
+        std::string strRecycledId = "10014504509992";
+        // 1. Tao the cu va co lich su
+        FileService::createAccountFiles(strRecycledId, "Chu The Cu", 500000, "VND");
+        Transaction txOld(strRecycledId, WITHDRAW, 100000, getNowTimestamp(), "Rut tien chu the cu");
+        FileService::appendTransaction(strRecycledId, txOld);
+
+        // 2. Xoa file tai khoan chu the cu (giu lai LichSu theo quy dinh de tra soat)
+        FileService::deleteAccountFile(strRecycledId);
+
+        // 3. Admin tao the moi cho chu the khac voi cung ID
+        FileService::createAccountFiles(strRecycledId, "Chu The Moi", 1000000, "VND");
+
+        // 4. Kiem tra lich su cua chu the moi phai sach tinh 100%
+        LinkedList<Transaction> listNewHistory;
+        FileService::loadTransactions(strRecycledId, listNewHistory);
+        TEST_ASSERT(listNewHistory.isEmpty(), "Chu the moi co lich su trang tinh khong bi ro ri thong tin chu cu");
+
+        // Don dep
+        FileService::deleteAccountFile(strRecycledId);
+        std::filesystem::remove("data/LichSu" + strRecycledId + ".txt");
+        // Xoa file archive neu co
+        for (const auto& entry : std::filesystem::directory_iterator("data/")) {
+            std::string pathStr = entry.path().string();
+            if (pathStr.find("Archive_LichSu" + strRecycledId) != std::string::npos) {
+                std::filesystem::remove(entry.path());
+            }
+        }
+    }
+
+    // 9.4 Chặn ký tự phân cách '|' và tên chỉ toàn khoảng trắng (Delimiter Injection Defense)
+    {
+        AtmController atm;
+        atm.initData();
+
+        ErrorCode errInject = atm.addCardAccount("10014504509993", "Nguyen Van A|1|999999", 100000, "VND");
+        TEST_ASSERT(errInject == ERR_INVALID_FORMAT, "Chan ho ten chua ky tu phan cach '|'");
+
+        ErrorCode errSpaces = atm.addCardAccount("10014504509994", "    ", 100000, "VND");
+        TEST_ASSERT(errSpaces == ERR_INVALID_FORMAT, "Chan ho ten chi toan khoang trang");
+    }
+
+    // 9.5 Ghép nối an toàn chi tiết giao dịch khi chứa ký tự phân cách '|'
+    {
+        std::string strLine = "2026-10-08 10:00:00|2|100000|Chuyen tien | Kem loi nhan | Uu tien";
+        Transaction tx = Transaction::parseFromFileLine("10014504500001", strLine);
+        TEST_ASSERT(tx.getDetail() == "Chuyen tien | Kem loi nhan | Uu tien", "Bao toan toan ven noi dung chi tiet chua ky tu '|'");
+        TEST_ASSERT(tx.getAmount() == 100000, "Parse dung so tien 100,000 VND");
+        TEST_ASSERT(tx.getType() == TRANSFER, "Parse dung loai giao dich TRANSFER");
+    }
+}
+
 int main() {
     std::cout << "##############################################################\n";
     std::cout << "#      BO KIEM THU CHUYEN SAU PHASE 2 - THANH VIEN C (PHAT)  #\n";
@@ -401,6 +501,7 @@ int main() {
     testAdminUnlockCard();
     testAtmSessionLifecycle();
     testReviewBugFixes();
+    testAdversarialHardening();
 
     std::cout << "\n======================================================\n";
     std::cout << "             TONG KET KIEM THU PHASE 2 (PHAT)         \n";

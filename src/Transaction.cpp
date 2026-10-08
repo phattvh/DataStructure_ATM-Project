@@ -97,6 +97,9 @@ Transaction Transaction::parseFromFileLine(const std::string& strId, const std::
         return Transaction(strId, WITHDRAW, 0, strTimestamp, strLine);
     }
     std::string strDetail = tokens[3];
+    for (size_t i = 4; i < tokens.size(); ++i) {
+        strDetail += "|" + tokens[i];
+    }
 
     TransactionType eType = WITHDRAW;
     if (iType == 2) eType = TRANSFER;

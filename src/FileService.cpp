@@ -30,6 +30,41 @@ static std::string trimString(const std::string& str) {
     return str.substr(iStart, iEnd - iStart + 1);
 }
 
+/**********************************************************
+ * Ham noi bo: Ghi file nguyen tu (Atomic Write) qua file tam
+ * chong mat mat hoac cat trang du lieu ve 0 byte khi sap nguon
+ **********************************************************/
+static bool atomicWriteFile(const std::string& strPath, const std::string& strContent) {
+    ensureDataDirExists();
+    std::string strTempPath = strPath + ".tmp";
+    std::ofstream fout(strTempPath, std::ios::trunc);
+    if (!fout.is_open()) {
+        return false;
+    }
+
+    fout << strContent;
+    fout.flush();
+    if (fout.fail()) {
+        fout.close();
+        std::error_code ec;
+        fs::remove(strTempPath, ec);
+        return false;
+    }
+    fout.close();
+
+    std::error_code ec;
+    fs::rename(strTempPath, strPath, ec);
+    if (ec) {
+        // Fallback neu he dieu hanh khong cho rename de len file da ton tai
+        fs::remove(strPath, ec);
+        fs::rename(strTempPath, strPath, ec);
+        if (ec) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool FileService::loadAdmins(LinkedList<Admin>& listAdmins) {
     ensureDataDirExists();
     std::string strPath = DATA_DIR + "Admin.txt";
@@ -91,6 +126,14 @@ bool FileService::loadCards(LinkedList<Card>& listCards,
         std::istringstream iss(strLine);
         std::string strId, strPin;
         if (iss >> strId >> strPin) {
+            // Phong chong the trung lap (Deduplication): bo qua neu da ton tai
+            auto pDup = listCards.findIf([&strId](const Card& c) {
+                return c.getId() == strId;
+            });
+            if (pDup != nullptr) {
+                continue;
+            }
+
             bool bIsLocked = false;
             // Kiem tra xem the co nam trong danh sach the khoa khong
             const std::string* pLocked = listLockedIds.findIf([&strId](const std::string& lockedId) {
@@ -109,39 +152,47 @@ bool FileService::loadCards(LinkedList<Card>& listCards,
 }
 
 bool FileService::saveCards(const LinkedList<Card>& listCards) {
-    ensureDataDirExists();
     std::string strPath = DATA_DIR + "TheTu.txt";
-    std::ofstream fout(strPath, std::ios::trunc);
-    if (!fout.is_open()) {
+    std::ostringstream oss;
+    Node<Card>* pCur = listCards.getHead();
+    while (pCur != nullptr) {
+        oss << pCur->_data.getId() << " " << pCur->_data.getPin() << "\n";
+        pCur = pCur->_pNext;
+    }
+    return atomicWriteFile(strPath, oss.str());
+}
+
+bool FileService::updateCardPin(const std::string& strId, const std::string& strNewPin) {
+    LinkedList<std::string> listLocked;
+    loadLockedIds(listLocked);
+    LinkedList<Card> listCards;
+    if (!loadCards(listCards, listLocked)) {
         return false;
     }
 
-    Node<Card>* pCur = listCards.getHead();
-    while (pCur != nullptr) {
-        fout << pCur->_data.getId() << " " << pCur->_data.getPin() << "\n";
-        pCur = pCur->_pNext;
+    auto pCard = listCards.findIf([&strId](const Card& c) {
+        return c.getId() == strId;
+    });
+    if (pCard == nullptr) {
+        return false;
     }
 
-    fout.close();
-    return true;
+    if (!pCard->changePin(strNewPin)) {
+        return false;
+    }
+
+    return saveCards(listCards);
 }
 
 bool FileService::saveLockedIds(const LinkedList<std::string>& listLockedIds) {
-    ensureDataDirExists();
     std::string strPath = DATA_DIR + "KhoaThe.txt";
-    std::ofstream fout(strPath, std::ios::trunc);
-    if (!fout.is_open()) {
-        return false;
-    }
-
+    std::ostringstream oss;
     Node<std::string>* pCur = listLockedIds.getHead();
     while (pCur != nullptr) {
-        fout << pCur->_data << "\n";
+        oss << pCur->_data << "\n";
         pCur = pCur->_pNext;
     }
-
-    fout.close();
-    return true;
+    return atomicWriteFile(strPath, oss.str());
 }
 
 bool FileService::appendLockedCard(const std::string& strId) {
@@ -183,11 +234,29 @@ ErrorCode FileService::loadAccount(const std::string& strId, Account& acc) {
     strBalanceLine = trimString(strBalanceLine);
     strCurrency = trimString(strCurrency);
 
+    // Kiem tra tinh toan ven: ID doc tu noi dung file phai khop voi ID truy van
+    if (strFileId != strId) {
+        fin.close();
+        return ERR_INVALID_FORMAT;
+    }
+
     long lBalance = 0;
     try {
-        lBalance = std::stol(strBalanceLine);
+        size_t idx = 0;
+        lBalance = std::stol(strBalanceLine, &idx);
+        // Neu co ky tu la o cuoi dong so du, coi nhu file bi hong dinh dang
+        if (idx != strBalanceLine.length()) {
+            fin.close();
+            return ERR_INVALID_FORMAT;
+        }
     } catch (...) {
-        lBalance = 0;
+        fin.close();
+        return ERR_INVALID_FORMAT;
+    }
+
+    if (lBalance < 0) {
+        fin.close();
+        return ERR_INVALID_FORMAT;
     }
 
     acc = Account(strFileId, strName, lBalance, strCurrency);
@@ -196,20 +265,13 @@ ErrorCode FileService::loadAccount(const std::string& strId, Account& acc) {
 }
 
 bool FileService::saveAccount(const Account& acc) {
-    ensureDataDirExists();
     std::string strPath = DATA_DIR + acc.getId() + ".txt";
-    std::ofstream fout(strPath, std::ios::trunc);
-    if (!fout.is_open()) {
-        return false;
-    }
-
-    fout << acc.getId() << "\n";
-    fout << acc.getName() << "\n";
-    fout << acc.getBalance() << "\n";
-    fout << acc.getCurrency() << "\n";
-
-    fout.close();
-    return true;
+    std::ostringstream oss;
+    oss << acc.getId() << "\n"
+        << acc.getName() << "\n"
+        << acc.getBalance() << "\n"
+        << acc.getCurrency() << "\n";
+    return atomicWriteFile(strPath, oss.str());
 }
 
 bool FileService::deleteAccountFile(const std::string& strId) {
@@ -229,9 +291,17 @@ bool FileService::createAccountFiles(const std::string& strId,
         return false;
     }
 
-    // 2. Tao file LichSu[ID].txt (khoi tao rong)
+    // 2. Tao file LichSu[ID].txt: Neu file lich su da ton tai tu truoc (cua chu the cu tung bi xoa),
+    // tien hanh luu tru (archive) de tranh ro ri thong tin cho chu the moi
     std::string strHistoryPath = DATA_DIR + "LichSu" + strId + ".txt";
-    std::ofstream foutHist(strHistoryPath, std::ios::app);
+    if (fs::exists(strHistoryPath) && fs::file_size(strHistoryPath) > 0) {
+        std::string strArchive = DATA_DIR + "Archive_LichSu" + strId + "_" + std::to_string(std::time(nullptr)) + ".bak";
+        std::error_code ec;
+        fs::rename(strHistoryPath, strArchive, ec);
+    }
+
+    // Khoi tao file LichSu moi trang tinh
+    std::ofstream foutHist(strHistoryPath, std::ios::trunc);
     if (!foutHist.is_open()) {
         return false;
     }

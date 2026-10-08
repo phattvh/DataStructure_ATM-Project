@@ -49,6 +49,15 @@ public:
     static bool saveCards(const LinkedList<Card>& listCards);
 
     /**********************************************************
+     * @Description Cap nhat ma PIN moi cho the truc tiep tren dia
+     * ma khong can cho den khi nguoi dung dang xuat
+     * @param strId Ma so the can doi PIN
+     * @param strNewPin Ma PIN moi gom 6 chu so
+     * @return true neu cap nhat thanh cong
+     **********************************************************/
+    static bool updateCardPin(const std::string& strId, const std::string& strNewPin);
+
+    /**********************************************************
      * @Description Ghi de lai danh sach the bi khoa vao data/KhoaThe.txt
      * @param listLockedIds Danh sach cac ma so ID the bi khoa
      * @return true neu ghi thanh cong

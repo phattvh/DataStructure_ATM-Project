@@ -50,7 +50,12 @@ bool UserController::enforceDefaultPinChange(Card& card) {
     ConsoleView::printWarning("Theo quy dinh bao mat, ban BAT BUOC phai doi ma PIN moi.");
 
     while (true) {
-        std::string strNewPin = ConsoleView::inputPassword("Nhap ma PIN moi gom 6 chu so: ");
+        std::string strNewPin = ConsoleView::inputPassword("Nhap ma PIN moi gom 6 chu so (Enter de huy): ");
+        if (strNewPin.empty()) {
+            ConsoleView::printWarning("Da huy thao tac doi ma PIN bat buoc.");
+            return false;
+        }
+
         if (!UserController::isValidPinFormat(strNewPin)) {
             ConsoleView::printError("Ma PIN moi phai chua dung 6 chu so!");
             continue;
@@ -62,6 +67,11 @@ bool UserController::enforceDefaultPinChange(Card& card) {
         }
 
         std::string strConfirmPin = ConsoleView::inputPassword("Xac nhan lai ma PIN moi: ");
+        if (strConfirmPin.empty()) {
+            ConsoleView::printWarning("Da huy thao tac doi ma PIN bat buoc.");
+            return false;
+        }
+
         if (strNewPin != strConfirmPin) {
             ConsoleView::printError("Hai lan nhap ma PIN khong khop nhau! Vui long thu lai.");
             continue;
@@ -71,6 +81,9 @@ bool UserController::enforceDefaultPinChange(Card& card) {
             ConsoleView::printError("Cap nhat ma PIN that bai. Vui long thu lai!");
             continue;
         }
+
+        // Luu ngay ma PIN moi xuong dia (TheTu.txt) chong mat mat trang thai
+        FileService::updateCardPin(card.getId(), strNewPin);
 
         ConsoleView::printSuccess("Doi ma PIN lan dau thanh cong! Vui long ghi nho ma PIN moi.");
         ConsoleView::pauseScreen();
@@ -196,15 +209,19 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                     ConsoleView::printError("So du khong du! Can giu lai it nhat 50,000 VND so du toi thieu.");
                 } else {
                     // Luu so du moi vao file [ID].txt tren dia
-                    FileService::saveAccount(acc);
+                    bool bSaveOk = FileService::saveAccount(acc);
+                    if (!bSaveOk) {
+                        acc.deposit(lAmount); // Rollback trong RAM
+                        ConsoleView::printError("Loi I/O he thong: Khong the cap nhat so du xuong dia! Giao dich da bi huy.");
+                    } else {
+                        std::string strTime = getNowTimestamp();
+                        // Ghi log giao dich vao file LichSu[ID].txt
+                        Transaction tx(acc.getId(), WITHDRAW, lAmount, strTime, "Rut tien mat tai ATM");
+                        FileService::appendTransaction(acc.getId(), tx);
 
-                    std::string strTime = getNowTimestamp();
-                    // Ghi log giao dich vao file LichSu[ID].txt
-                    Transaction tx(acc.getId(), WITHDRAW, lAmount, strTime, "Rut tien mat tai ATM");
-                    FileService::appendTransaction(acc.getId(), tx);
-
-                    ConsoleView::printSuccess("Rut tien thanh cong! Vui long nhan tien tai khe.");
-                    ConsoleView::printReceipt(acc.getId(), "RUT TIEN MAT", lAmount, acc.getBalance(), strTime);
+                        ConsoleView::printSuccess("Rut tien thanh cong! Vui long nhan tien tai khe.");
+                        ConsoleView::printReceipt(acc.getId(), "RUT TIEN MAT", lAmount, acc.getBalance(), strTime);
+                    }
                 }
                 ConsoleView::pauseScreen();
                 break;
@@ -279,23 +296,34 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                     } else if (err == ERR_SYSTEM_OVERFLOW) {
                         ConsoleView::printError("Tai khoan nguoi nhan bi tran so du! Giao dich da duoc hoan tien.");
                     } else {
-                        // Luu ca 2 tai khoan ben vung tren dia
-                        FileService::saveAccount(acc);
-                        FileService::saveAccount(receiverAcc);
+                        // Luu ca 2 tai khoan ben vung tren dia voi co che kiem tra loi
+                        bool bSaveSender = FileService::saveAccount(acc);
+                        bool bSaveReceiver = false;
+                        if (bSaveSender) {
+                            bSaveReceiver = FileService::saveAccount(receiverAcc);
+                        }
 
-                        std::string strTime = getNowTimestamp();
-                        // Ghi log giao dich nguoi gui
-                        Transaction senderTx(acc.getId(), TRANSFER, lAmount, strTime,
-                                             "Chuyen tien den " + receiverAcc.getId() + " - " + receiverAcc.getName());
-                        FileService::appendTransaction(acc.getId(), senderTx);
+                        if (!bSaveSender || !bSaveReceiver) {
+                            // Rollback ca tren RAM va tren dia neu co loi I/O
+                            acc.deposit(lAmount);
+                            receiverAcc.withdraw(lAmount);
+                            FileService::saveAccount(acc);
+                            ConsoleView::printError("Loi I/O he thong khi cap nhat so du! Giao dich da duoc hoan tien an toan.");
+                        } else {
+                            std::string strTime = getNowTimestamp();
+                            // Ghi log giao dich nguoi gui
+                            Transaction senderTx(acc.getId(), TRANSFER, lAmount, strTime,
+                                                 "Chuyen tien den " + receiverAcc.getId() + " - " + receiverAcc.getName());
+                            FileService::appendTransaction(acc.getId(), senderTx);
 
-                        // Ghi log giao dich nguoi nhan
-                        Transaction receiverTx(receiverAcc.getId(), RECEIVE, lAmount, strTime,
-                                               "Nhan tien tu " + acc.getId() + " - " + acc.getName());
-                        FileService::appendTransaction(receiverAcc.getId(), receiverTx);
+                            // Ghi log giao dich nguoi nhan
+                            Transaction receiverTx(receiverAcc.getId(), RECEIVE, lAmount, strTime,
+                                                   "Nhan tien tu " + acc.getId() + " - " + acc.getName());
+                            FileService::appendTransaction(receiverAcc.getId(), receiverTx);
 
-                        ConsoleView::printSuccess("Chuyen tien thanh cong den tai khoan " + strReceiverId + " (" + receiverAcc.getName() + ")!");
-                        ConsoleView::printReceipt(acc.getId(), "CHUYEN TIEN", lAmount, acc.getBalance(), strTime);
+                            ConsoleView::printSuccess("Chuyen tien thanh cong den tai khoan " + strReceiverId + " (" + receiverAcc.getName() + ")!");
+                            ConsoleView::printReceipt(acc.getId(), "CHUYEN TIEN", lAmount, acc.getBalance(), strTime);
+                        }
                     }
                 }
                 ConsoleView::pauseScreen();
@@ -336,6 +364,8 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
 
                 std::string strMsg;
                 if (UserController::processChangePin(card, strOldPin, strNewPin, strConfirmPin, strMsg)) {
+                    // Luu ngay ma PIN moi xuong dia (TheTu.txt) chong mat mat trang thai
+                    FileService::updateCardPin(card.getId(), strNewPin);
                     ConsoleView::printSuccess(strMsg);
                 } else {
                     ConsoleView::printError(strMsg);

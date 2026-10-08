@@ -1,6 +1,8 @@
 #include "AtmController.h"
 #include <iostream>
 #include <iomanip>
+#include <thread>
+#include <chrono>
 
 AtmController::AtmController()
     : _pCurrentAccount(nullptr),
@@ -99,6 +101,7 @@ void AtmController::processAdminLogin() {
         ConsoleView::pauseScreen();
         this->processAdminMenu();
     } else {
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
         ConsoleView::printError("Ten dang nhap hoac mat khau Admin khong chinh xac!");
         ConsoleView::pauseScreen();
     }
@@ -165,8 +168,14 @@ ErrorCode AtmController::addCardAccount(const std::string& strId,
         }
     }
 
-    // 2. Kiem tra ten chu the khong duoc de trong
-    if (strName.empty()) {
+    // 2. Kiem tra ten chu the khong duoc de trong va khong chua ky tu phan cach '|', '\n', '\r'
+    size_t iStart = strName.find_first_not_of(" \t\r\n");
+    if (iStart == std::string::npos) {
+        return ERR_INVALID_FORMAT;
+    }
+    if (strName.find('|') != std::string::npos ||
+        strName.find('\n') != std::string::npos ||
+        strName.find('\r') != std::string::npos) {
         return ERR_INVALID_FORMAT;
     }
 
@@ -257,10 +266,10 @@ ErrorCode AtmController::deleteCardAccount(const std::string& strId) {
         return ERR_ID_NOT_FOUND;
     }
 
-    // 2. Xoa the khoi danh sach the trong RAM
-    this->_listCards.removeIf([&](const Card& c) {
+    // 2. Xoa the khoi danh sach the trong RAM (xoa triet de moi ban sao neu co)
+    while (this->_listCards.removeIf([&](const Card& c) {
         return c.getId() == strId;
-    });
+    })) {}
 
     // 3. Neu the dang trong danh sach khoa, xoa triet de khoi danh sach khoa trong RAM
     bool bWasLocked = false;
@@ -418,6 +427,7 @@ void AtmController::processUserLogin() {
     bool bAuth = UserController::authenticate(*pCard, strPin, bOutLocked);
 
     if (!bAuth) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
         if (bOutLocked) {
             auto pExistingLock = this->_listLockedIds.findIf([&](const std::string& id) {
                 return id == strId;
@@ -474,12 +484,20 @@ void AtmController::processUserMenu() {
         return;
     }
 
+    std::string strInitialPin = this->_pCurrentCard->getPin();
+    bool bInitialLocked = this->_pCurrentCard->isLocked();
+
     // Chuyen giao quyen dieu khien phien cho UserController
     UserController::runUserSession(*(this->_pCurrentCard), *(this->_pCurrentAccount));
 
-    // Ket thuc phien lam viec: Luu thay doi tai khoan va the xuong dia
+    // Ket thuc phien lam viec: Luu thay doi tai khoan xuong dia
     FileService::saveAccount(*(this->_pCurrentAccount));
-    FileService::saveCards(this->_listCards);
+
+    // Chi luu lai danh sach the neu the co su thay doi ve PIN hoac trang thai khoa
+    // nham tranh loi ghi de lam mat du lieu the do cache RAM bi cu
+    if (this->_pCurrentCard->getPin() != strInitialPin || this->_pCurrentCard->isLocked() != bInitialLocked) {
+        FileService::saveCards(this->_listCards);
+    }
 
     this->cleanupSession();
 }
