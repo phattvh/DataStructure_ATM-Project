@@ -582,32 +582,12 @@ void AtmController::processUserMenu() {
         return;
     }
 
-    std::string strInitialPin = this->_pCurrentCard->getPin();
-    bool bInitialLocked = this->_pCurrentCard->isLocked();
-
     // Chuyen giao quyen dieu khien phien cho UserController
+    // Moi giao dich (Rut tien, Chuyen tien, Doi PIN) deu duoc UserController
+    // luu tru nguyen tu tuc thi xuong dia (Immediate Persistence / ACID Durability).
     UserController::runUserSession(*(this->_pCurrentCard), *(this->_pCurrentAccount));
 
-    // Ket thuc phien lam viec: Luu thay doi tai khoan xuong dia
-    // Phong chong resurrection bug: Chi luu tai khoan neu the van ton tai trong RAM
-    // va file tai khoan tren dia chua bi xoa boi quan tri vien (Admin)
-    Account dummyAcc;
-    bool bCardExistsInRam = (this->_listCards.findIf([this](const Card& c) {
-        return c.getId() == this->_pCurrentCard->getId();
-    }) != nullptr);
-
-    if (bCardExistsInRam && FileService::loadAccount(this->_pCurrentAccount->getId(), dummyAcc) == ERR_NONE) {
-        FileService::saveAccount(*(this->_pCurrentAccount));
-    }
-
-    // Chi luu lai danh sach the neu the co su thay doi ve PIN hoac trang thai khoa
-    // nham tranh loi ghi de lam mat du lieu the do cache RAM bi cu
-    if (this->_pCurrentCard->getPin() != strInitialPin || this->_pCurrentCard->isLocked() != bInitialLocked) {
-        if (bCardExistsInRam) {
-            FileService::saveCards(this->_listCards);
-        }
-    }
-
+    // Ket thuc phien lam viec: Giai phong tai nguyen phien an toan
     this->cleanupSession();
 }
 
