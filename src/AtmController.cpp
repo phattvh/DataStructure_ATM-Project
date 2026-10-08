@@ -93,8 +93,18 @@ void AtmController::processAdminLogin() {
     ConsoleView::clearScreen();
     ConsoleView::printHeader("DANG NHAP QUAN TRI VIEN (ADMIN)");
 
-    std::string strUser = ConsoleView::inputLine("Ten dang nhap Admin: ");
-    std::string strPass = ConsoleView::inputPassword("Mat khau Admin: ");
+    std::string strUser = ConsoleView::inputLine("Ten dang nhap Admin (Enter hoac 0 de huy): ");
+    if (strUser.empty() || strUser == "0") {
+        ConsoleView::printInfo("Da huy thao tac dang nhap Quan tri vien.");
+        ConsoleView::pauseScreen();
+        return;
+    }
+    std::string strPass = ConsoleView::inputPassword("Mat khau Admin (Enter hoac 0 de huy): ");
+    if (strPass.empty() || strPass == "0") {
+        ConsoleView::printInfo("Da huy thao tac dang nhap Quan tri vien.");
+        ConsoleView::pauseScreen();
+        return;
+    }
 
     if (this->authenticateAdmin(strUser, strPass)) {
         FileService::appendAdminLog("ADMIN_LOGIN_SUCCESS", "Admin dang nhap thanh cong: " + strUser);
@@ -463,7 +473,12 @@ void AtmController::processUserLogin() {
     ConsoleView::clearScreen();
     ConsoleView::printHeader("DANG NHAP KHACH HANG (USER)");
 
-    std::string strId = ConsoleView::inputLine("Nhap ma so the (14 chu so): ");
+    std::string strId = ConsoleView::inputLine("Nhap ma so the (14 chu so, Enter hoac 0 de huy): ");
+    if (strId.empty() || strId == "0") {
+        ConsoleView::printInfo("Da huy thao tac dang nhap Khach hang.");
+        ConsoleView::pauseScreen();
+        return;
+    }
 
     if (strId.length() != static_cast<size_t>(ID_LENGTH)) {
         ConsoleView::printError("Dinh dang ma so the khong hop le (phai gom dung 14 chu so)!");
@@ -500,7 +515,12 @@ void AtmController::processUserLogin() {
     }
 
     // Nhap ma PIN
-    std::string strPin = ConsoleView::inputPassword("Nhap ma PIN: ");
+    std::string strPin = ConsoleView::inputPassword("Nhap ma PIN (Enter hoac 0 de huy): ");
+    if (strPin.empty() || strPin == "0") {
+        ConsoleView::printInfo("Da huy thao tac dang nhap Khach hang.");
+        ConsoleView::pauseScreen();
+        return;
+    }
     bool bOutLocked = false;
     bool bAuth = UserController::authenticate(*pCard, strPin, bOutLocked);
 
