@@ -152,8 +152,11 @@ std::string ConsoleView::inputPassword(const std::string& strPrompt, std::istrea
             continue;
         }
 
-        strPassword.push_back(cKey);
-        std::cout << '*' << std::flush;
+        // Ky tu hop le: gioi han toi da 32 ky tu phong chong tan cong Denial of Service (DoS)
+        if (strPassword.length() < 32) {
+            strPassword.push_back(cKey);
+            std::cout << '*' << std::flush;
+        }
     }
 #else
     LinuxTerminalRawGuard rawGuard;
@@ -203,9 +206,11 @@ std::string ConsoleView::inputPassword(const std::string& strPrompt, std::istrea
             continue;
         }
 
-        // Ky tu hop le: luu vao chuoi va in dau *
-        strPassword.push_back(cKey);
-        std::cout << '*' << std::flush;
+        // Ky tu hop le: gioi han toi da 32 ky tu phong chong tan cong Denial of Service (DoS)
+        if (strPassword.length() < 32) {
+            strPassword.push_back(cKey);
+            std::cout << '*' << std::flush;
+        }
     }
 #endif
 
