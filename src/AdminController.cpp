@@ -338,7 +338,12 @@ void AdminController::deleteCard() {
     }
 
     // Cap nhat TheTu.txt va KhoaThe.txt
-    FileService::saveCards(this->_listCards);
+    bool bSavedCards = FileService::saveCards(this->_listCards);
+    if (!bSavedCards) {
+        ConsoleView::printError("Loi I/O he thong: Khong the cap nhat TheTu.txt! Thao tac xoa bi huy de bao ve du lieu.");
+        ConsoleView::pauseScreen();
+        return;
+    }
     if (bWasLocked) {
         FileService::saveLockedIds(this->_listLockedIds);
     }

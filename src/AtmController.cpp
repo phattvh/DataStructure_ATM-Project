@@ -316,7 +316,10 @@ ErrorCode AtmController::deleteCardAccount(const std::string& strId) {
     }
 
     // 4. Cap nhat cac tap tin tren dia
-    FileService::saveCards(this->_listCards);
+    bool bSavedCards = FileService::saveCards(this->_listCards);
+    if (!bSavedCards) {
+        return ERR_FILE_NOT_FOUND;
+    }
     if (bWasLocked) {
         FileService::saveLockedIds(this->_listLockedIds);
     }
