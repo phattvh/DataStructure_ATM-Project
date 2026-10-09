@@ -88,7 +88,7 @@ pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án
 | **C15** | Phase 2 | Hoàn thiện tiêu chuẩn Production | Menu số nghiêm ngặt, Phân trang sao kê, Admin Audit Log, Cảnh báo xóa thẻ có số dư, Non-tty fallback. | `src/ConsoleView.cpp`<br>`src/UserController.cpp`<br>`test/test_phase_2_c.cpp` | **`DONE`** |
 | **C16** | Phase 3 | Gia cố Luồng Đăng nhập & Thoát an toàn | Bổ sung bẫy hủy đăng nhập an toàn bằng phím Enter hoặc 0 khi nhập ID và PIN không phạt số lần sai; khóa thẻ vào `KhoaThe.txt`. | `src/AtmController.cpp` | **`DONE`** |
 | **C17** | Phase 3 | Bộ Kiểm thử Tự động Tích hợp Phase 3 | Xây dựng bộ test `test/test_phase_3.cpp` (58 test cases) và target `make test_phase_3` bao quát 100% luồng User & giao dịch tài chính. | `test/test_phase_3.cpp`<br>`Makefile` | **`DONE`** |
-| **C13** | Phase 4 | Hoàn thiện Sơ đồ Kỹ thuật Báo cáo | Vẽ sơ đồ UML Lớp hoàn chỉnh và sơ đồ luồng dữ liệu kiến trúc đưa vào Báo cáo Word. | `docs/07_so_do_uml_va_luong_du_lieu.md` | **`DONE`** |
+| **C13** | Phase 4 | Hoàn thiện Sơ đồ Kỹ thuật Báo cáo | Vẽ sơ đồ UML Lớp hoàn chỉnh và sơ đồ luồng dữ liệu kiến trúc đưa vào Báo cáo Word. | `docs/08_so_do_uml_va_luong_du_lieu.md` | **`DONE`** |
 
 ---
 

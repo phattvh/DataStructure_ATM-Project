@@ -1,4 +1,4 @@
-# 07. SƠ ĐỒ UML LỚP VÀ LUỒNG DỮ LIỆU BÁO CÁO (UML & DATA FLOW)
+# 08. SƠ ĐỒ UML LỚP VÀ LUỒNG DỮ LIỆU BÁO CÁO (UML & DATA FLOW)
 
 Tài liệu này cung cấp toàn bộ sơ đồ kỹ thuật chuẩn UML (Sơ đồ Lớp, Sơ đồ Phân tầng, Sơ đồ Tuần tự giao dịch) phục vụ trực tiếp cho việc đưa vào Báo cáo Word của đồ án môn học.
 

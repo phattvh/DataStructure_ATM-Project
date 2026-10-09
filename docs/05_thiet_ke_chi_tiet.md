@@ -38,13 +38,17 @@ Tài liệu này quy định chi tiết cấu trúc các lớp (Class), thuộc 
 
   enum ErrorCode {
       ERR_NONE = 0,
-      ERR_INVALID_AMOUNT,
-      ERR_NOT_MULTIPLE,
-      ERR_INSUFFICIENT_FUNDS,
-      ERR_FILE_NOT_FOUND,
-      ERR_CARD_LOCKED,
-      ERR_RECIPIENT_NOT_FOUND,
-      ERR_SAME_ACCOUNT
+      ERR_INVALID_AMOUNT = 1,
+      ERR_NOT_MULTIPLE = 2,
+      ERR_INSUFFICIENT_FUNDS = 3,
+      ERR_FILE_NOT_FOUND = 4,
+      ERR_CARD_LOCKED = 5,
+      ERR_ID_EXISTS = 6,
+      ERR_ID_NOT_FOUND = 7,
+      ERR_RECIPIENT_NOT_FOUND = ERR_ID_NOT_FOUND,
+      ERR_INVALID_FORMAT = 8,
+      ERR_SAME_ACCOUNT = 9,
+      ERR_SYSTEM_OVERFLOW = 10
   };
   ```
 

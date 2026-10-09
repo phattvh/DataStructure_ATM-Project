@@ -115,13 +115,18 @@ DataStructure_ATM-Project/
 │   ├── LichSu10014504500001.txt      # Lịch sử giao dịch chi tiết
 │   └── ...
 ├── docs/                             # Tài liệu kỹ thuật chi tiết của dự án
+│   ├── README.md                     # Mục lục tài liệu kỹ thuật
 │   ├── 01_tieu_chi_cham.md
 │   ├── 02_yeu_cau_va_pham_vi.md
 │   ├── 03_kien_truc_he_thong.md
 │   ├── 04_ctdl_va_thuat_toan.md
 │   ├── 05_thiet_ke_chi_tiet.md
 │   ├── 06_ke_hoach_trien_khai.md
-│   └── 07_ke_hoach_kiem_thu.md
+│   ├── 07_ke_hoach_kiem_thu.md
+│   ├── 08_so_do_uml_va_luong_du_lieu.md
+│   ├── TIEN_DO_CONG_VIEC.md          # Bảng theo dõi tiến độ công việc
+│   ├── HUONG_DAN_TEST_BO_NHO.md      # Hướng dẫn kiểm tra Valgrind & Memory
+│   └── DemoScript_User.md            # Kịch bản demo kiểm thử
 ├── include/                          # Tệp tin Header (*.h)
 │   ├── Common.h                      # Hằng số, Enum, ErrorCode
 │   ├── LinkedList.h                  # Template class Cấu trúc dữ liệu LinkedList<T>
@@ -131,7 +136,9 @@ DataStructure_ATM-Project/
 │   ├── Transaction.h                 # Khai báo lớp Transaction
 │   ├── FileService.h                 # Khai báo lớp FileService
 │   ├── ConsoleView.h                 # Khai báo lớp ConsoleView
-│   └── AtmController.h               # Khai báo lớp AtmController
+│   ├── AtmController.h               # Khai báo bộ điều phối chính AtmController
+│   ├── UserController.h              # Khai báo bộ điều phối phân hệ User
+│   └── AdminController.h             # Khai báo bộ điều phối phân hệ Admin
 ├── src/                              # Tệp tin Hiện thực (*.cpp)
 │   ├── Admin.cpp
 │   ├── Card.cpp
@@ -140,9 +147,20 @@ DataStructure_ATM-Project/
 │   ├── FileService.cpp
 │   ├── ConsoleView.cpp
 │   ├── AtmController.cpp
+│   ├── UserController.cpp
+│   ├── AdminController.cpp
 │   └── main.cpp                      # Điểm vào chính của ứng dụng
 └── test/                             # Kiểm thử tự động & Unit Test
-    └── test_atm.cpp                  # Test suite cho LinkedList và Business Logic
+    ├── test.cpp                      # Test suite tổng hợp
+    ├── test_member_a.cpp             # Unit test Phase 1 Member A
+    ├── test_member_c.cpp             # Unit test Phase 1 Member C
+    ├── test_phase_1_AC.cpp           # Tích hợp Phase 1 A & C
+    ├── test_phase_2_a.cpp            # Test Phase 2 Member A
+    ├── test_phase_2_b.cpp            # Test Phase 2 Member B
+    ├── test_phase_2_c.cpp            # Test Phase 2 Member C
+    ├── test_phase_3.cpp              # Test tích hợp Phase 3
+    ├── test_phase_3_a.cpp            # Test Phase 3 Member A
+    └── test_memory_leak.cpp          # Kiểm định rò rỉ bộ nhớ Phase 4
 ```
 
 ---

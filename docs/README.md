@@ -15,6 +15,7 @@ Hệ thống tài liệu kỹ thuật hoàn chỉnh cho đồ án **Project 1 - 
 | **05** | [**Thiết kế Chi tiết Mã nguồn**](file:///home/phat2709/Project_Class/DataStructure_ATM-Project/docs/05_thiet_ke_chi_tiet.md) | Đặc tả chi tiết từng file `.h` và `.cpp`, toàn bộ thuộc tính, phương thức, kiểu dữ liệu, chuẩn Hungarian Notation và C++ Coding Standard V2. |
 | **06** | [**Kế hoạch Triển khai & Phân công**](file:///home/phat2709/Project_Class/DataStructure_ATM-Project/docs/06_ke_hoach_trien_khai.md) | Phân công nhiệm vụ chi tiết 3 thành viên (**Phát**, **Trí**, **Tuấn**), lộ trình 14 ngày (4 Phase), nguyên tắc phối hợp nhóm và quy chuẩn Git. |
 | **07** | [**Kế hoạch Kiểm thử & QA**](file:///home/phat2709/Project_Class/DataStructure_ATM-Project/docs/07_ke_hoach_kiem_thu.md) | Ma trận kiểm thử hộp đen chi tiết cho Admin, User, kiểm thử tấn công input, kiểm định rò rỉ bộ nhớ với Valgrind và checklist nghiệm thu (DoD). |
+| **08** | [**Sơ đồ UML & Luồng Dữ liệu**](file:///home/phat2709/Project_Class/DataStructure_ATM-Project/docs/08_so_do_uml_va_luong_du_lieu.md) | Sơ đồ Lớp UML toàn diện, Sơ đồ Tuần tự (Sequence Diagram) các luồng rút/chuyển tiền/xác thực và Sơ đồ Luồng Dữ liệu (DFD) phục vụ Báo cáo Word. |
 
 ---
 
