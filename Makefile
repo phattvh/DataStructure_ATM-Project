@@ -45,6 +45,9 @@ TEST_PHASE2_C_BIN = $(BUILD_DIR)/test_phase_2_c
 TEST_PHASE3_A_SRC = $(TEST_DIR)/test_phase_3_a.cpp
 TEST_PHASE3_A_BIN = $(BUILD_DIR)/test_phase_3_a
 
+TEST_MEM_SRC = $(TEST_DIR)/test_memory_leak.cpp
+TEST_MEM_BIN = $(BUILD_DIR)/test_memory_leak
+
 all: $(OBJS) app
 
 app: $(OBJS) $(APP_SRC) | $(BUILD_DIR)
@@ -60,7 +63,7 @@ $(BUILD_DIR):
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-test: test_c test_a test_ac test_runner test_phase_2 test_phase_2_a test_phase_2_c test_phase_3_a
+test: test_c test_a test_ac test_runner test_phase_2 test_phase_2_a test_phase_2_c test_phase_3_a test_mem
 
 test_c: $(OBJS) $(TEST_C_SRC) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(OBJS) $(TEST_C_SRC) -o $(TEST_C_BIN)
@@ -94,7 +97,11 @@ test_phase_3_a: $(OBJS) $(TEST_PHASE3_A_SRC) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(OBJS) $(TEST_PHASE3_A_SRC) -o $(TEST_PHASE3_A_BIN)
 	./$(TEST_PHASE3_A_BIN)
 
+test_mem: $(OBJS) $(TEST_MEM_SRC) | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(OBJS) $(TEST_MEM_SRC) -o $(TEST_MEM_BIN)
+	./$(TEST_MEM_BIN)
+
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all app test test_c test_a test_ac test_runner test_phase_2 test_phase_2_a test_phase_2_c test_phase_3_a clean
+.PHONY: all app test test_c test_a test_ac test_runner test_phase_2 test_phase_2_a test_phase_2_c test_phase_3_a test_mem clean
