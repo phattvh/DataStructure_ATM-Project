@@ -288,6 +288,10 @@ void testChangePinAndHistory() {
     // Kiem tra voi tai khoan chua co giao dich
     bool bDisplayEmpty = UserController::displayTransactionHistory("10014504500010", false);
     TEST_ASSERT(bDisplayEmpty, "displayTransactionHistory() xu ly an toan voi tai khoan chua co lich su");
+
+    // Kiem tra voi file lich su khong ton tai (loi I/O)
+    bool bDisplayMissing = UserController::displayTransactionHistory("99999999999999", false);
+    TEST_ASSERT(!bDisplayMissing, "displayTransactionHistory() tra ve false khi gap loi I/O khong mo duoc file");
 }
 
 /******************************************************************************

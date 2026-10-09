@@ -285,12 +285,20 @@ bool UserController::processChangePinAndPersist(Card& card, const std::string& s
 bool UserController::displayTransactionHistory(const std::string& strAccountId, bool bPause) {
     LinkedList<Transaction> listTrans;
     bool bLoaded = FileService::loadTransactions(strAccountId, listTrans);
-    if (!bLoaded || listTrans.isEmpty()) {
+    if (!bLoaded) {
+        ConsoleView::printError("Loi I/O he thong: Khong the doc file lich su giao dich!");
+        if (bPause) {
+            ConsoleView::pauseScreen();
+        }
+        return false;
+    }
+
+    if (listTrans.isEmpty()) {
         ConsoleView::printInfo("Hien tai tai khoan chua co giao dich nao duoc ghi nhan.");
         if (bPause) {
             ConsoleView::pauseScreen();
         }
-        return bLoaded;
+        return true;
     }
 
     const int PAGE_SIZE = 5;
