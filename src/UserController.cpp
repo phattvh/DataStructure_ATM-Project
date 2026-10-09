@@ -155,6 +155,10 @@ ErrorCode UserController::processTransferAndPersist(Account& senderAcc,
                                                     long lAmount,
                                                     std::string& strOutTimestamp,
                                                     Account* pReceiverMock) {
+    if (!UserController::isValidIdFormat(strReceiverId)) {
+        return ERR_INVALID_FORMAT;
+    }
+
     if (senderAcc.getId() == strReceiverId) {
         return ERR_SAME_ACCOUNT;
     }

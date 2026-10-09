@@ -230,6 +230,10 @@ void testTransferWithPersistence() {
     TEST_ASSERT(errLocked == ERR_CARD_LOCKED, "Chan chuyen tien cho the dang bi khoa tra ve ERR_CARD_LOCKED");
     LinkedList<std::string> clearLocked;
     FileService::saveLockedIds(clearLocked);
+
+    // 2.7 Chan Path Traversal va ma nguoi nhan sai dinh dang trong API
+    ErrorCode errTraversal = UserController::processTransferAndPersist(senderAcc, "../../malicious", 50000, strTimestamp);
+    TEST_ASSERT(errTraversal == ERR_INVALID_FORMAT, "processTransferAndPersist chan path traversal va ma nhan sai dinh dang");
 }
 
 /******************************************************************************
