@@ -577,7 +577,6 @@ void AtmController::processUserLogin() {
             ConsoleView::pauseScreen();
             return;
         }
-        FileService::saveCards(this->_listCards);
     }
 
     ConsoleView::printSuccess("Xac thuc thanh cong! Chuyen tiep vao phan he Khach hang...");
