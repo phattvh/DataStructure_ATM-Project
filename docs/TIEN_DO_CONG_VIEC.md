@@ -9,16 +9,16 @@
 
 ```mermaid
 pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án
-    "Đã Hoàn Thành (DONE)" : 37
-    "Chưa Hoàn Thành (NOT DONE)" : 3
+    "Đã Hoàn Thành (DONE)" : 38
+    "Chưa Hoàn Thành (NOT DONE)" : 2
 ```
 
 | Thành viên | Vai trò phụ trách | Tổng việc | Đã xong (DONE) | Còn lại (NOT DONE) | Tiến độ (%) |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **TRÍ (Thành viên B)** | Data Engineer / Memory & Storage Flow | 12 | **11** | **1** | **91.7%** |
+| **TRÍ (Thành viên B)** | Data Engineer / Memory & Storage Flow | 12 | **12** | **0** | **100.0%** |
 | **TUẤN (Thành viên A)** | Business Logic / User Flow & UI | 13 | **11** | **2** | **84.6%** |
 | **PHÁT (Thành viên C)** | Tech Lead / Core Controller & Admin Flow | 15 | **15** | **0** | **100.0%** |
-| **TỔNG CỘNG** | **Toàn đội ngũ 3 thành viên** | **40** | **37** | **3** | **92.5%** |
+| **TỔNG CỘNG** | **Toàn đội ngũ 3 thành viên** | **40** | **38** | **2** | **95.0%** |
 
 ---
 
@@ -42,7 +42,7 @@ pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án
 | **B09** | Phase 2 | Cơ chế Auto-Recovery dữ liệu mẫu | Tự động tạo thư mục `data/` và sinh sẵn 3 Admin, 10 Thẻ từ cùng 10 file tài khoản mẫu nếu chưa có. | `src/FileService.cpp` | **`DONE`** |
 | **B10** | Phase 3 | Hỗ trợ ghép nối Chuyển tiền nguyên tử | Pair-programming cùng Tuấn kết nối `FileService::loadAccount` vào luồng chuyển tiền 2 đầu. | `src/UserController.cpp` | **`DONE`** |
 | **B11** | Phase 4 | Kiểm thử rò rỉ bộ nhớ Valgrind & Memory Audit | Bộ kiểm thử bộ nhớ chuyên sâu (Custom Tracker & Valgrind script), đảm bảo 0 bytes leaked, 67/67 test pass. | `Makefile`<br>`test/test_memory_leak.cpp`<br>`scripts/valgrind_check.sh` | **`DONE`** |
-| **B12** | Phase 4 | Tài liệu Báo cáo: CTDL & Big-O | Soạn thảo mục phân tích cấu trúc dữ liệu, so sánh ưu nhược điểm và bảng độ phức tạp Big-O cho file Word. | Báo cáo Word | **`NOT DONE`** |
+| **B12** | Phase 4 | Tài liệu Báo cáo: CTDL & Big-O | Soạn thảo mục phân tích cấu trúc dữ liệu, so sánh ưu nhược điểm và bảng độ phức tạp Big-O cho file Word. | `docs/04_ctdl_va_thuat_toan.md` | **`DONE`** |
 
 ---
 
