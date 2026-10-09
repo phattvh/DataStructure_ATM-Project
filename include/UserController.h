@@ -39,6 +39,15 @@ public:
     static ErrorCode processWithdraw(Account& acc, long lAmount);
 
     /**********************************************************
+     * @Description Thuc hien rut tien ket noi FileService: cap nhat [ID].txt va LichSu[ID].txt (Phase 3 - A10)
+     * @param acc Tham chieu tai khoan thuc hien rut tien
+     * @param lAmount So tien muon rut
+     * @param strOutTimestamp Tham chieu tra ve chuoi thoi gian thuc cua giao dich (A09)
+     * @return ErrorCode (ERR_NONE neu rut thanh cong)
+     **********************************************************/
+    static ErrorCode processWithdrawAndPersist(Account& acc, long lAmount, std::string& strOutTimestamp);
+
+    /**********************************************************
      * @Description Thuc hien chuyen tien dam bao tinh nguyen tu va rollback
      * @param senderAcc Tai khoan nguoi chuyen
      * @param receiverAcc Tai khoan nguoi nhan
@@ -46,6 +55,23 @@ public:
      * @return ErrorCode (ERR_NONE neu chuyen thanh cong)
      **********************************************************/
     static ErrorCode processTransfer(Account& senderAcc, Account& receiverAcc, long lAmount);
+
+    /**********************************************************
+     * @Description Thuc hien chuyen tien 2 dau ket noi FileService (Phase 3 - A08, B10)
+     * Kiem tra tai khoan nhan thuc su qua FileService::loadAccount,
+     * thuc thi nguyen tu tren ca RAM va Disk, ghi log thoi gian thuc vao 2 file lich su.
+     * @param senderAcc Tai khoan nguoi chuyen
+     * @param strReceiverId Ma so tai khoan nguoi nhan (14 so)
+     * @param lAmount So tien muon chuyen
+     * @param strOutTimestamp Tham chieu tra ve thoi gian thuc (A09)
+     * @param pReceiverMock Con tro tai khoan nhan gia lap (neu muon mock trong test)
+     * @return ErrorCode
+     **********************************************************/
+    static ErrorCode processTransferAndPersist(Account& senderAcc,
+                                              const std::string& strReceiverId,
+                                              long lAmount,
+                                              std::string& strOutTimestamp,
+                                              Account* pReceiverMock = nullptr);
 
     /**********************************************************
      * @Description Thuc hien doi ma PIN chu dong voi 2 lan xac nhan
@@ -59,6 +85,27 @@ public:
     static bool processChangePin(Card& card, const std::string& strOldPin, 
                                  const std::string& strNewPin, const std::string& strConfirmPin,
                                  std::string& strOutMessage);
+
+    /**********************************************************
+     * @Description Doi ma PIN chu dong va luu ngay vao tap tin TheTu.txt (Phase 3 - A11)
+     * @param card Tham chieu doi tuong the can doi PIN
+     * @param strOldPin Ma PIN hien tai
+     * @param strNewPin Ma PIN moi
+     * @param strConfirmPin Xac nhan lai ma PIN moi
+     * @param strOutMessage Thong bao ket qua tra ve
+     * @return true neu doi PIN va luu file thanh cong
+     **********************************************************/
+    static bool processChangePinAndPersist(Card& card, const std::string& strOldPin,
+                                          const std::string& strNewPin, const std::string& strConfirmPin,
+                                          std::string& strOutMessage);
+
+    /**********************************************************
+     * @Description Doc va in bang lich su giao dich tu data/LichSu[ID].txt (Phase 3 - A11)
+     * @param strAccountId Ma so tai khoan can xem
+     * @param bPause Co tam dung man hinh hay khong (mac dinh true)
+     * @return true neu doc va hien thi thanh cong
+     **********************************************************/
+    static bool displayTransactionHistory(const std::string& strAccountId, bool bPause = true);
 
     /**********************************************************
      * @Description Hien thi thong tin tai khoan qua lop giao dien

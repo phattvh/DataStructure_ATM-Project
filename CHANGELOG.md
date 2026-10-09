@@ -2,6 +2,43 @@
 
 Tài liệu này ghi lại toàn bộ lịch sử thay đổi, thiết kế kỹ thuật, sửa lỗi bảo mật và nâng cấp mã nguồn được thực hiện trên nhánh `phat` và nhánh tích hợp `fix`.
 
+## [2.1.0] - 2026-10-09 (Phase 3 - Thành viên A: Tích hợp Giao dịch Tài chính với FileService)
+
+Hoàn thành 100% Phase 3 của Thành viên A (Tuấn) trên nhánh `tuan`. Tất cả giao dịch tài chính giờ đây ghi nhận xuống đĩa với tính nguyên tử ACID, không mất tiền và không mất log.
+
+### 💾 Tích hợp Persistence (A10, A11, A08, A09, B10)
+
+- **[A10] Kết nối `FileService` vào Rút tiền**:
+  - `processWithdrawAndPersist()` mới: Sau khi rút tiền thành công trong RAM, tự động gọi `FileService::saveAccount()` cập nhật số dư vào `data/[ID].txt` và `FileService::appendTransaction()` ghi vết vào `data/LichSu[ID].txt`.
+  - Giao dịch thất bại (số tiền không hợp lệ, vi phạm số dư duy trì) **không** bị ghi log rác vào file lịch sử.
+
+- **[A11] Kết nối `FileService` vào Đổi PIN & Xem Lịch sử**:
+  - `processChangePinAndPersist()`: Sau khi đổi PIN thành công trong RAM, gọi `FileService::updateCardPin()` để cập nhật ngay lập tức vào `data/TheTu.txt` mà không cần chờ đăng xuất.
+  - `displayTransactionHistory()`: Nạp danh sách giao dịch từ `data/LichSu[ID].txt` qua `FileService::loadTransactions()`, hiển thị bảng phân trang có định dạng chuẩn (timestamp | loại GD | số tiền | chi tiết). Hỗ trợ `bPause = false` cho môi trường test headless.
+
+- **[A08] Vá Lỗi #1 – Bỏ trừ tiền ảo khi chuyển khoản**:
+  - Loại bỏ nhánh mock `withdraw()` cũ. `processTransferAndPersist()` gọi `FileService::loadAccount()` để tải tài khoản người nhận thật từ đĩa.
+  - Người gửi **không bị trừ tiền ảo** nếu tài khoản người nhận không tồn tại (`ERR_FILE_NOT_FOUND`).
+
+- **[A09] Vá Lỗi #2 – Format thời gian thực trên biên lai**:
+  - Thay thế chuỗi cứng `"Realtime"` bằng `getNowTimestamp()` (định dạng `YYYY-MM-DD HH:MM:SS`, đúng 19 ký tự).
+  - Mọi biên lai rút tiền và chuyển tiền đều in đúng thời gian thực của giao dịch.
+
+- **[B10] Chuyển tiền nguyên tử 2 đầu trên đĩa**:
+  - `processTransferAndPersist()` thực hiện Atomic Write cho cả người gửi và người nhận:
+    1. `saveAccount(senderAcc)` → Rollback nếu thất bại.
+    2. `saveAccount(receiverAcc)` → Rollback cả 2 nếu thất bại.
+  - Tổng số dư hệ thống được bảo toàn tuyệt đối sau mọi thao tác chuyển tiền.
+  - Chặn chuyển tiền đến thẻ đang bị khóa qua `FileService::loadLockedIds()`.
+
+### 🧪 Bộ Kiểm thử Phase 3 Member A (`test/test_phase_3_a.cpp`)
+- **49/49 test PASS (100%)** – 0 cảnh báo biên dịch (`-Wall -Wextra`).
+- 5 nhóm kiểm thử: A10 Rút tiền persistence, A08+B10 Chuyển tiền nguyên tử, A11 Đổi PIN & Lịch sử, A09 Timestamp, E2E User Flow.
+- Hàm tiện ích `resetSampleData()` đảm bảo test isolation tuyệt đối (không phụ thuộc trạng thái chạy trước).
+- Hồi quy: `test_member_a` (46 PASS), `test_phase_2_a` (32 PASS), `test_phase_2_c` (106 PASS) đều **100%**.
+
+---
+
 ## [2.0.0] - 2026-10-08 (Phase 2 Integration, Adversarial Hardening & Production Release Ready)
 
 Hoàn thành tích hợp 100% Phase 2 giữa 3 thành viên (Member A - Tuấn, Member B - Trí, Member C - Phát) trên nhánh `fix`, trải qua 3 vòng Code Review chuyên sâu và gia cố độ bền:
