@@ -5,6 +5,14 @@
 #include <filesystem>
 #include <cstdio>
 
+#ifdef _WIN32
+#include <process.h>
+#define GET_CURRENT_PID() _getpid()
+#else
+#include <unistd.h>
+#define GET_CURRENT_PID() getpid()
+#endif
+
 namespace fs = std::filesystem;
 
 /**********************************************************
@@ -32,11 +40,13 @@ static std::string trimString(const std::string& str) {
 
 /**********************************************************
  * Ham noi bo: Ghi file nguyen tu (Atomic Write) qua file tam
- * chong mat mat hoac cat trang du lieu ve 0 byte khi sap nguon
+ * chong mat mat hoac cat trang du lieu ve 0 byte khi sap nguon,
+ * ket hop tien to PID tranh va cham ghi file giua nhieu tien trinh
  **********************************************************/
 static bool atomicWriteFile(const std::string& strPath, const std::string& strContent) {
     ensureDataDirExists();
-    std::string strTempPath = strPath + ".tmp";
+    std::string strSuffix = "." + std::to_string(GET_CURRENT_PID());
+    std::string strTempPath = strPath + strSuffix + ".tmp";
     std::ofstream fout(strTempPath, std::ios::trunc);
     if (!fout.is_open()) {
         return false;
@@ -56,7 +66,7 @@ static bool atomicWriteFile(const std::string& strPath, const std::string& strCo
     fs::rename(strTempPath, strPath, ec);
     if (ec) {
         // Fallback an toan co sao luu phong ngua he dieu hanh khong cho rename de len file da ton tai
-        std::string strBakPath = strPath + ".bak";
+        std::string strBakPath = strPath + strSuffix + ".bak";
         std::error_code ecBak;
         if (fs::exists(strPath)) {
             fs::rename(strPath, strBakPath, ecBak);
