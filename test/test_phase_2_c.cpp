@@ -694,6 +694,15 @@ void testAdversarialEdgeCasesHardening() {
         TEST_ASSERT(bRes, "Doi PIN hop le thanh cong");
         TEST_ASSERT(cardTest.getPin() == "888888", "Ma PIN moi la 888888");
     }
+
+    // 12.6 Kiem thu rut tien da tien te (USD Withdrawal Support)
+    {
+        Account accUsd("10014504509998", "USD Holder", 1000, "USD");
+        TEST_ASSERT(accUsd.canWithdraw(100) == ERR_NONE, "Tai khoan USD chap nhan rut 100 USD (boi so cua 10)");
+        TEST_ASSERT(accUsd.canWithdraw(5) == ERR_INVALID_AMOUNT, "Tai khoan USD chan rut duoi 10 USD (ERR_INVALID_AMOUNT)");
+        TEST_ASSERT(accUsd.canWithdraw(15) == ERR_NOT_MULTIPLE, "Tai khoan USD chan rut khong chia het cho 10 USD (ERR_NOT_MULTIPLE)");
+        TEST_ASSERT(accUsd.canWithdraw(1000) == ERR_INSUFFICIENT_FUNDS, "Tai khoan USD chan rut khong con du 10 USD duy tri (ERR_INSUFFICIENT_FUNDS)");
+    }
 }
 
 int main() {

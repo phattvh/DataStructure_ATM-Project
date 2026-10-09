@@ -44,15 +44,18 @@ void Account::setCurrency(const std::string& strCurrency) {
 }
 
 ErrorCode Account::canWithdraw(long lAmount) const {
-    if (lAmount < MIN_TRANSACTION) {
+    long lMinTrans = (this->_strCurrency == "USD") ? 10 : MIN_TRANSACTION;
+    long lMinReserve = (this->_strCurrency == "USD") ? 10 : MIN_BALANCE_RESERVE;
+
+    if (lAmount < lMinTrans) {
         return ERR_INVALID_AMOUNT;
     }
-    if (lAmount % MIN_TRANSACTION != 0) {
+    if (lAmount % lMinTrans != 0) {
         return ERR_NOT_MULTIPLE;
     }
     // Phong chong tran so nguyen (signed integer underflow / UB)
     // khi lAmount rat lon (vi du LONG_MAX) vuot qua so du hien tai
-    if (this->_lBalance < lAmount || (this->_lBalance - lAmount) < MIN_BALANCE_RESERVE) {
+    if (this->_lBalance < lAmount || (this->_lBalance - lAmount) < lMinReserve) {
         return ERR_INSUFFICIENT_FUNDS;
     }
     return ERR_NONE;
