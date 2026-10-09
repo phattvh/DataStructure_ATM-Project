@@ -102,6 +102,25 @@ ErrorCode UserController::processWithdraw(Account& acc, long lAmount) {
     return err;
 }
 
+ErrorCode UserController::processWithdrawAndPersist(Account& acc, long lAmount, std::string& strOutTimestamp) {
+    ErrorCode err = processWithdraw(acc, lAmount);
+    if (err != ERR_NONE) {
+        return err;
+    }
+
+    bool bSaveOk = FileService::saveAccount(acc);
+    if (!bSaveOk) {
+        acc.deposit(lAmount); // Rollback trong RAM
+        return ERR_FILE_NOT_FOUND;
+    }
+
+    strOutTimestamp = getNowTimestamp();
+    Transaction tx(acc.getId(), WITHDRAW, lAmount, strOutTimestamp, "Rut tien mat tai ATM");
+    FileService::appendTransaction(acc.getId(), tx);
+
+    return ERR_NONE;
+}
+
 ErrorCode UserController::processTransfer(Account& senderAcc, Account& receiverAcc, long lAmount) {
     if (senderAcc.getId() == receiverAcc.getId()) {
         return ERR_SAME_ACCOUNT;
@@ -127,6 +146,81 @@ ErrorCode UserController::processTransfer(Account& senderAcc, Account& receiverA
         senderAcc.deposit(lAmount);
         return ERR_SYSTEM_OVERFLOW;
     }
+
+    return ERR_NONE;
+}
+
+ErrorCode UserController::processTransferAndPersist(Account& senderAcc,
+                                                    const std::string& strReceiverId,
+                                                    long lAmount,
+                                                    std::string& strOutTimestamp,
+                                                    Account* pReceiverMock) {
+    if (senderAcc.getId() == strReceiverId) {
+        return ERR_SAME_ACCOUNT;
+    }
+
+    // Kiem tra nguoi nhan co bi khoa khong
+    LinkedList<std::string> listLocked;
+    FileService::loadLockedIds(listLocked);
+    if (listLocked.findIf([&strReceiverId](const std::string& strId) { return strId == strReceiverId; }) != nullptr) {
+        return ERR_CARD_LOCKED;
+    }
+
+    ErrorCode errCheck = senderAcc.canWithdraw(lAmount);
+    if (errCheck != ERR_NONE) {
+        return errCheck;
+    }
+
+    Account receiverAcc;
+    bool bUseMock = (pReceiverMock != nullptr && pReceiverMock->getId() == strReceiverId);
+
+    if (bUseMock) {
+        receiverAcc = *pReceiverMock;
+    } else {
+        ErrorCode errLoad = FileService::loadAccount(strReceiverId, receiverAcc);
+        if (errLoad != ERR_NONE) {
+            return ERR_FILE_NOT_FOUND;
+        }
+    }
+
+    if (senderAcc.getCurrency() != receiverAcc.getCurrency()) {
+        return ERR_INVALID_FORMAT;
+    }
+
+    ErrorCode errTransfer = processTransfer(senderAcc, receiverAcc, lAmount);
+    if (errTransfer != ERR_NONE) {
+        return errTransfer;
+    }
+
+    if (bUseMock && pReceiverMock != nullptr) {
+        *pReceiverMock = receiverAcc;
+    }
+
+    bool bSaveSender = FileService::saveAccount(senderAcc);
+    bool bSaveReceiver = false;
+    if (bSaveSender) {
+        bSaveReceiver = FileService::saveAccount(receiverAcc);
+    }
+
+    if (!bSaveSender || !bSaveReceiver) {
+        senderAcc.deposit(lAmount);
+        receiverAcc.withdraw(lAmount);
+        FileService::saveAccount(senderAcc);
+        if (bUseMock && pReceiverMock != nullptr) {
+            *pReceiverMock = receiverAcc;
+        }
+        return ERR_SYSTEM_OVERFLOW;
+    }
+
+    strOutTimestamp = getNowTimestamp();
+
+    Transaction senderTx(senderAcc.getId(), TRANSFER, lAmount, strOutTimestamp,
+                         "Chuyen tien den " + receiverAcc.getId() + " - " + receiverAcc.getName());
+    FileService::appendTransaction(senderAcc.getId(), senderTx);
+
+    Transaction receiverTx(receiverAcc.getId(), RECEIVE, lAmount, strOutTimestamp,
+                           "Nhan tien tu " + senderAcc.getId() + " - " + senderAcc.getName());
+    FileService::appendTransaction(receiverAcc.getId(), receiverTx);
 
     return ERR_NONE;
 }
@@ -168,6 +262,105 @@ bool UserController::processChangePin(Card& card, const std::string& strOldPin,
     return true;
 }
 
+bool UserController::processChangePinAndPersist(Card& card, const std::string& strOldPin,
+                                               const std::string& strNewPin, const std::string& strConfirmPin,
+                                               std::string& strOutMessage) {
+    if (!processChangePin(card, strOldPin, strNewPin, strConfirmPin, strOutMessage)) {
+        return false;
+    }
+
+    if (!FileService::updateCardPin(card.getId(), strNewPin)) {
+        strOutMessage = "Doi ma PIN trong RAM thanh cong nhung cap nhat tap tin TheTu.txt that bai!";
+        return false;
+    }
+
+    strOutMessage = "Doi ma PIN thanh cong va da cap nhat vao he thong!";
+    return true;
+}
+
+bool UserController::displayTransactionHistory(const std::string& strAccountId, bool bPause) {
+    LinkedList<Transaction> listTrans;
+    bool bLoaded = FileService::loadTransactions(strAccountId, listTrans);
+    if (!bLoaded || listTrans.isEmpty()) {
+        ConsoleView::printInfo("Hien tai tai khoan chua co giao dich nao duoc ghi nhan.");
+        if (bPause) {
+            ConsoleView::pauseScreen();
+        }
+        return bLoaded;
+    }
+
+    const int PAGE_SIZE = 5;
+    int iTotalItems = listTrans.getSize();
+    int iTotalPages = (iTotalItems + PAGE_SIZE - 1) / PAGE_SIZE;
+    int iCurrentPage = 1;
+
+    bool bViewing = true;
+    while (bViewing) {
+        ConsoleView::clearScreen();
+        ConsoleView::printHeader("LICH SU GIAO DICH - TAI KHOAN: " + strAccountId);
+        std::cout << "  Trang " << iCurrentPage << " / " << iTotalPages 
+                  << " (Tong cong: " << iTotalItems << " giao dich)\n";
+        std::cout << "----------------------------------------------------------------------\n";
+        std::cout << std::left
+                  << std::setw(22) << "THOI GIAN"
+                  << std::setw(15) << "LOAI GD"
+                  << std::setw(16) << "SO TIEN"
+                  << "CHI TIET\n";
+        std::cout << "----------------------------------------------------------------------\n";
+
+        int iStartIndex = (iCurrentPage - 1) * PAGE_SIZE;
+        int iEndIndex = std::min(iStartIndex + PAGE_SIZE, iTotalItems);
+        int iIdx = 0;
+        auto pCur = listTrans.getHead();
+        while (pCur != nullptr) {
+            if (iIdx >= iStartIndex && iIdx < iEndIndex) {
+                std::cout << std::left
+                          << std::setw(22) << pCur->_data.getTimestamp()
+                          << std::setw(15) << pCur->_data.getTypeName()
+                          << std::right << std::setw(12) << pCur->_data.getAmount() << " " << std::left << std::setw(5) << "VND"
+                          << pCur->_data.getDetail() << "\n";
+            }
+            pCur = pCur->_pNext;
+            iIdx++;
+        }
+        std::cout << "----------------------------------------------------------------------\n";
+
+        if (!bPause || iTotalPages == 1) {
+            if (bPause) {
+                ConsoleView::pauseScreen();
+            }
+            bViewing = false;
+        } else {
+            std::cout << "  Dieu huong: [N] Trang sau | [P] Trang truoc | [0] Quay lai menu\n";
+            std::string strNav = ConsoleView::inputLine("  Nhap lua chon: ");
+            size_t s1 = strNav.find_first_not_of(" \t\r\n");
+            std::string strClean = (s1 == std::string::npos) ? "" : strNav.substr(s1, strNav.find_last_not_of(" \t\r\n") - s1 + 1);
+
+            if (strClean == "0" || strClean.empty()) {
+                bViewing = false;
+            } else if (strClean == "N" || strClean == "n") {
+                if (iCurrentPage < iTotalPages) {
+                    iCurrentPage++;
+                } else {
+                    ConsoleView::printWarning("Ban dang o trang cuoi cung!");
+                    ConsoleView::pauseScreen();
+                }
+            } else if (strClean == "P" || strClean == "p") {
+                if (iCurrentPage > 1) {
+                    iCurrentPage--;
+                } else {
+                    ConsoleView::printWarning("Ban dang o trang dau tien!");
+                    ConsoleView::pauseScreen();
+                }
+            } else {
+                ConsoleView::printError("Lua chon khong hop le!");
+                ConsoleView::pauseScreen();
+            }
+        }
+    }
+    return true;
+}
+
 void UserController::displayAccountInfo(const Account& acc) {
     ConsoleView::displayAccountDetails(acc.getId(), acc.getName(), acc.getBalance(), acc.getCurrency());
     std::cout << "  So du kha dung: " 
@@ -205,28 +398,21 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                     break;
                 }
 
-                ErrorCode err = UserController::processWithdraw(acc, lAmount);
+                std::string strTime;
+                ErrorCode err = UserController::processWithdrawAndPersist(acc, lAmount, strTime);
                 if (err == ERR_INVALID_AMOUNT) {
                     ConsoleView::printError("So tien rut toi thieu phai tu 50,000 VND!");
                 } else if (err == ERR_NOT_MULTIPLE) {
                     ConsoleView::printError("So tien rut phai la boi so cua 50,000 VND!");
                 } else if (err == ERR_INSUFFICIENT_FUNDS) {
                     ConsoleView::printError("So du khong du! Can giu lai it nhat 50,000 VND so du toi thieu.");
+                } else if (err == ERR_FILE_NOT_FOUND) {
+                    ConsoleView::printError("Loi I/O he thong: Khong the cap nhat so du xuong dia! Giao dich da bi huy.");
+                } else if (err == ERR_NONE) {
+                    ConsoleView::printSuccess("Rut tien thanh cong! Vui long nhan tien tai khe.");
+                    ConsoleView::printReceipt(acc.getId(), "RUT TIEN MAT", lAmount, acc.getBalance(), strTime, acc.getCurrency());
                 } else {
-                    // Luu so du moi vao file [ID].txt tren dia
-                    bool bSaveOk = FileService::saveAccount(acc);
-                    if (!bSaveOk) {
-                        acc.deposit(lAmount); // Rollback trong RAM
-                        ConsoleView::printError("Loi I/O he thong: Khong the cap nhat so du xuong dia! Giao dich da bi huy.");
-                    } else {
-                        std::string strTime = getNowTimestamp();
-                        // Ghi log giao dich vao file LichSu[ID].txt
-                        Transaction tx(acc.getId(), WITHDRAW, lAmount, strTime, "Rut tien mat tai ATM");
-                        FileService::appendTransaction(acc.getId(), tx);
-
-                        ConsoleView::printSuccess("Rut tien thanh cong! Vui long nhan tien tai khe.");
-                        ConsoleView::printReceipt(acc.getId(), "RUT TIEN MAT", lAmount, acc.getBalance(), strTime, acc.getCurrency());
-                    }
+                    ConsoleView::printError("Rut tien that bai!");
                 }
                 ConsoleView::pauseScreen();
                 break;
@@ -364,81 +550,7 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                 break;
             }
             case 4: {
-                ConsoleView::printHeader("LICH SU GIAO DICH");
-                LinkedList<Transaction> listTrans;
-                bool bLoaded = FileService::loadTransactions(acc.getId(), listTrans);
-                if (!bLoaded || listTrans.isEmpty()) {
-                    ConsoleView::printInfo("Hien tai tai khoan chua co giao dich nao duoc ghi nhan.");
-                    ConsoleView::pauseScreen();
-                } else {
-                    const int PAGE_SIZE = 5;
-                    int iTotalItems = listTrans.getSize();
-                    int iTotalPages = (iTotalItems + PAGE_SIZE - 1) / PAGE_SIZE;
-                    int iCurrentPage = 1;
-
-                    bool bViewing = true;
-                    while (bViewing) {
-                        ConsoleView::clearScreen();
-                        ConsoleView::printHeader("LICH SU GIAO DICH - TAI KHOAN: " + acc.getId());
-                        std::cout << "  Trang " << iCurrentPage << " / " << iTotalPages 
-                                  << " (Tong cong: " << iTotalItems << " giao dich)\n";
-                        std::cout << "----------------------------------------------------------------------\n";
-                        std::cout << std::left
-                                  << std::setw(22) << "THOI GIAN"
-                                  << std::setw(15) << "LOAI GD"
-                                  << std::setw(16) << "SO TIEN"
-                                  << "CHI TIET\n";
-                        std::cout << "----------------------------------------------------------------------\n";
-
-                        int iStartIndex = (iCurrentPage - 1) * PAGE_SIZE;
-                        int iEndIndex = std::min(iStartIndex + PAGE_SIZE, iTotalItems);
-                        int iIdx = 0;
-                        auto pCur = listTrans.getHead();
-                        while (pCur != nullptr) {
-                            if (iIdx >= iStartIndex && iIdx < iEndIndex) {
-                                std::cout << std::left
-                                          << std::setw(22) << pCur->_data.getTimestamp()
-                                          << std::setw(15) << pCur->_data.getTypeName()
-                                          << std::right << std::setw(12) << pCur->_data.getAmount() << " " << std::left << std::setw(5) << acc.getCurrency()
-                                          << pCur->_data.getDetail() << "\n";
-                            }
-                            pCur = pCur->_pNext;
-                            iIdx++;
-                        }
-                        std::cout << "----------------------------------------------------------------------\n";
-
-                        if (iTotalPages == 1) {
-                            ConsoleView::pauseScreen();
-                            bViewing = false;
-                        } else {
-                            std::cout << "  Dieu huong: [N] Trang sau | [P] Trang truoc | [0] Quay lai menu\n";
-                            std::string strNav = ConsoleView::inputLine("  Nhap lua chon: ");
-                            size_t s1 = strNav.find_first_not_of(" \t\r\n");
-                            std::string strClean = (s1 == std::string::npos) ? "" : strNav.substr(s1, strNav.find_last_not_of(" \t\r\n") - s1 + 1);
-
-                            if (strClean == "0" || strClean.empty()) {
-                                bViewing = false;
-                            } else if (strClean == "N" || strClean == "n") {
-                                if (iCurrentPage < iTotalPages) {
-                                    iCurrentPage++;
-                                } else {
-                                    ConsoleView::printWarning("Ban dang o trang cuoi cung!");
-                                    ConsoleView::pauseScreen();
-                                }
-                            } else if (strClean == "P" || strClean == "p") {
-                                if (iCurrentPage > 1) {
-                                    iCurrentPage--;
-                                } else {
-                                    ConsoleView::printWarning("Ban dang o trang dau tien!");
-                                    ConsoleView::pauseScreen();
-                                }
-                            } else {
-                                ConsoleView::printError("Lua chon khong hop le!");
-                                ConsoleView::pauseScreen();
-                            }
-                        }
-                    }
-                }
+                UserController::displayTransactionHistory(acc.getId());
                 break;
             }
             case 5: {
@@ -458,9 +570,7 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                 std::string strConfirmPin = ConsoleView::inputPassword("Nhap lai ma PIN moi: ");
 
                 std::string strMsg;
-                if (UserController::processChangePin(card, strOldPin, strNewPin, strConfirmPin, strMsg)) {
-                    // Luu ngay ma PIN moi xuong dia (TheTu.txt) chong mat mat trang thai
-                    FileService::updateCardPin(card.getId(), strNewPin);
+                if (UserController::processChangePinAndPersist(card, strOldPin, strNewPin, strConfirmPin, strMsg)) {
                     ConsoleView::printSuccess(strMsg);
                 } else {
                     ConsoleView::printError(strMsg);

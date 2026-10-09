@@ -237,9 +237,9 @@ void testAdminUnlockCard() {
 
     // 2. Admin mo khoa:
     // Xoa khoi listLockedIds va luu lai KhoaThe.txt
-    listLocked.removeIf([&strLockId](const std::string& id) {
+    while (listLocked.removeIf([&strLockId](const std::string& id) {
         return id == strLockId;
-    });
+    })) {}
     bool bSaveLock = FileService::saveLockedIds(listLocked);
     TEST_ASSERT(bSaveLock, "saveLockedIds() sau khi mo khoa thanh cong");
 

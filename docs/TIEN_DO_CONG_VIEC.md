@@ -1,6 +1,6 @@
 # 📋 BẢNG THEO DÕI TIẾN ĐỘ CÔNG VIỆC DỰ ÁN (PROJECT TASK TRACKER)
 > **Dự án:** `DataStructure_ATM-Project` (Mô phỏng hệ thống ATM bằng C++)  
-> **Cập nhật lần cuối:** 08/10/2026 (Hoàn tất Phase 3 - Toàn bộ mã nguồn & kiểm thử đã xong)  
+> **Cập nhật lần cuối:** 09/10/2026 (Hoàn tất Phase 3 & Nhiệm vụ B11 Kiểm định rò rỉ bộ nhớ Phase 4)  
 > **Quy chuẩn đánh giá trạng thái:** `DONE` (Đã hoàn thành) | `NOT DONE` (Chưa hoàn thành)
 
 ---
@@ -8,7 +8,7 @@
 ## 📊 I. TỔNG QUAN TIẾN ĐỘ TOÀN DỰ ÁN (DASHBOARD)
 
 ```mermaid
-pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án (Kết thúc Phase 3 & Khởi động Phase 4)
+pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án
     "Đã Hoàn Thành (DONE)" : 37
     "Chưa Hoàn Thành (NOT DONE)" : 3
 ```
@@ -41,7 +41,7 @@ pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án (Kết thúc Phase 3
 | **B08** | Phase 2 | Tầng `FileService`: Ghi log giao dịch | Ghi nối thời gian thực vào `data/LichSu[ID].txt` (cờ `std::ios::app`) và đọc danh sách lịch sử. | `include/FileService.h`<br>`src/FileService.cpp` | **`DONE`** |
 | **B09** | Phase 2 | Cơ chế Auto-Recovery dữ liệu mẫu | Tự động tạo thư mục `data/` và sinh sẵn 3 Admin, 10 Thẻ từ cùng 10 file tài khoản mẫu nếu chưa có. | `src/FileService.cpp` | **`DONE`** |
 | **B10** | Phase 3 | Hỗ trợ ghép nối Chuyển tiền nguyên tử | Pair-programming cùng Tuấn kết nối `FileService::loadAccount` vào luồng chuyển tiền 2 đầu. | `src/UserController.cpp` | **`DONE`** |
-| **B11** | Phase 4 | Kiểm thử rò rỉ bộ nhớ Valgrind / ASan | Chạy Valgrind / ASan kiểm tra ứng dụng hoàn chỉnh, đảm bảo `definitely lost: 0 bytes`. | `Makefile`<br>`test/` | **`DONE`** |
+| **B11** | Phase 4 | Kiểm thử rò rỉ bộ nhớ Valgrind & Memory Audit | Bộ kiểm thử bộ nhớ chuyên sâu (Custom Tracker & Valgrind script), đảm bảo 0 bytes leaked, 67/67 test pass. | `Makefile`<br>`test/test_memory_leak.cpp`<br>`scripts/valgrind_check.sh` | **`DONE`** |
 | **B12** | Phase 4 | Tài liệu Báo cáo: CTDL & Big-O | Soạn thảo mục phân tích cấu trúc dữ liệu, so sánh ưu nhược điểm và bảng độ phức tạp Big-O cho file Word. | Báo cáo Word | **`NOT DONE`** |
 
 ---
@@ -109,6 +109,6 @@ gantt
     section Phase 3 (Tích Hợp Giao Dịch)
     Phát, Tuấn, Trí (Giao dịch thật & Test P3) :done, p3_all, 2026-10-08, 3d
     section Phase 4 (Báo Cáo & Demo)
-    Tất cả (Cross-test & Valgrind/ASan)   :p4_test, 2026-10-11, 2d
-    Tuấn & Phát (Word & Video Demo)       :p4_doc, 2026-10-12, 2d
+    Trí (Memory Audit & Valgrind Task B11)     :done, p4_b11, 2026-10-09, 1d
+    Tất cả (Báo Cáo Word & Video Demo)         :p4_doc, 2026-10-10, 3d
 ```
