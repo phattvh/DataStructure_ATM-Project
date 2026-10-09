@@ -212,7 +212,7 @@ void testTransferWithPersistence() {
     long lSenderBalCurrent = senderAcc.getBalance();
     const std::string strGhostId = "10014504509999";
     ErrorCode errGhost = UserController::processTransferAndPersist(senderAcc, strGhostId, 500000, strTimestamp);
-    TEST_ASSERT(errGhost == ERR_FILE_NOT_FOUND, "Chuyen tien den tai khoan khong ton tai tra ve ERR_FILE_NOT_FOUND");
+    TEST_ASSERT(errGhost == ERR_RECIPIENT_NOT_FOUND, "Chuyen tien den tai khoan khong ton tai tra ve ERR_RECIPIENT_NOT_FOUND");
     TEST_ASSERT(senderAcc.getBalance() == lSenderBalCurrent, "[Va loi #1] So du nguoi gui trong RAM KHONG bi tru tien ao");
 
     Account senderCheckGhost;

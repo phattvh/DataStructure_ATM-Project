@@ -179,7 +179,7 @@ ErrorCode UserController::processTransferAndPersist(Account& senderAcc,
     } else {
         ErrorCode errLoad = FileService::loadAccount(strReceiverId, receiverAcc);
         if (errLoad != ERR_NONE) {
-            return ERR_FILE_NOT_FOUND;
+            return ERR_RECIPIENT_NOT_FOUND;
         }
     }
 
