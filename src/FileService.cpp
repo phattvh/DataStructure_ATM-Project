@@ -15,22 +15,19 @@
 
 namespace fs = std::filesystem;
 
-/**********************************************************
- * Ham noi bo: Dam bao thu muc DATA_DIR ton tai
- **********************************************************/
+
+//Ham noi bo: Dam bao thu muc DATA_DIR ton tai
 static void ensureDataDirExists() {
     try {
         if (!fs::exists(DATA_DIR)) {
             fs::create_directories(DATA_DIR);
         }
     } catch (...) {
-        // Bo qua neu thu muc da ton tai hoac khong tao duoc
+
     }
 }
 
-/**********************************************************
- * Ham noi bo: Trim khoang trang dau va cuoi chuoi
- **********************************************************/
+//Ham noi bo: Trim khoang trang dau va cuoi chuoi
 static std::string trimString(const std::string& str) {
     size_t iStart = str.find_first_not_of(" \t\r\n");
     if (iStart == std::string::npos) return "";
@@ -38,11 +35,7 @@ static std::string trimString(const std::string& str) {
     return str.substr(iStart, iEnd - iStart + 1);
 }
 
-/**********************************************************
- * Ham noi bo: Ghi file nguyen tu (Atomic Write) qua file tam
- * chong mat mat hoac cat trang du lieu ve 0 byte khi sap nguon,
- * ket hop tien to PID tranh va cham ghi file giua nhieu tien trinh
- **********************************************************/
+//Ham noi bo: Ghi file nguyen tu (Atomic Write) qua file tam + tien to PID
 static bool atomicWriteFile(const std::string& strPath, const std::string& strContent) {
     ensureDataDirExists();
     std::string strSuffix = "." + std::to_string(GET_CURRENT_PID());
@@ -65,7 +58,6 @@ static bool atomicWriteFile(const std::string& strPath, const std::string& strCo
     std::error_code ec;
     fs::rename(strTempPath, strPath, ec);
     if (ec) {
-        // Fallback an toan co sao luu phong ngua he dieu hanh khong cho rename de len file da ton tai
         std::string strBakPath = strPath + strSuffix + ".bak";
         std::error_code ecBak;
         if (fs::exists(strPath)) {
@@ -74,7 +66,6 @@ static bool atomicWriteFile(const std::string& strPath, const std::string& strCo
 
         fs::rename(strTempPath, strPath, ec);
         if (ec) {
-            // Neu rename lan 2 van that bai, khoi phuc file goc tu backup
             if (!ecBak && fs::exists(strBakPath)) {
                 std::error_code ecRestore;
                 fs::rename(strBakPath, strPath, ecRestore);
@@ -84,7 +75,6 @@ static bool atomicWriteFile(const std::string& strPath, const std::string& strCo
             return false;
         }
 
-        // Rename thanh cong -> don dep file backup
         if (!ecBak && fs::exists(strBakPath)) {
             std::error_code ecDelBak;
             fs::remove(strBakPath, ecDelBak);
@@ -154,7 +144,6 @@ bool FileService::loadCards(LinkedList<Card>& listCards,
         std::istringstream iss(strLine);
         std::string strId, strPin;
         if (iss >> strId >> strPin) {
-            // Phong chong the trung lap (Deduplication): bo qua neu da ton tai
             auto pDup = listCards.findIf([&strId](const Card& c) {
                 return c.getId() == strId;
             });
@@ -163,7 +152,7 @@ bool FileService::loadCards(LinkedList<Card>& listCards,
             }
 
             bool bIsLocked = false;
-            // Kiem tra xem the co nam trong danh sach the khoa khong
+            // Kiem tra the co trong danh sach the khoa khong
             const std::string* pLocked = listLockedIds.findIf([&strId](const std::string& lockedId) {
                 return lockedId == strId;
             });
@@ -254,7 +243,7 @@ ErrorCode FileService::loadAccount(const std::string& strId, Account& acc) {
     if (!std::getline(fin, strName)) { fin.close(); return ERR_FILE_NOT_FOUND; }
     if (!std::getline(fin, strBalanceLine)) { fin.close(); return ERR_FILE_NOT_FOUND; }
     if (!std::getline(fin, strCurrency)) {
-        strCurrency = "VND"; // Mac dinh neu thieu dong 4
+        strCurrency = "VND"; 
     }
 
     strFileId = trimString(strFileId);
@@ -272,7 +261,6 @@ ErrorCode FileService::loadAccount(const std::string& strId, Account& acc) {
     try {
         size_t idx = 0;
         lBalance = std::stol(strBalanceLine, &idx);
-        // Neu co ky tu la o cuoi dong so du, coi nhu file bi hong dinh dang
         if (idx != strBalanceLine.length()) {
             fin.close();
             return ERR_INVALID_FORMAT;
@@ -319,8 +307,7 @@ bool FileService::createAccountFiles(const std::string& strId,
         return false;
     }
 
-    // 2. Tao file LichSu[ID].txt: Neu file lich su da ton tai tu truoc (cua chu the cu tung bi xoa),
-    // tien hanh luu tru (archive) de tranh ro ri thong tin cho chu the moi
+    // 2. Tao file LichSu[ID].txt: Neu file lich su da ton tai tu truoc tien hanh luu tru 
     std::string strHistoryPath = DATA_DIR + "LichSu" + strId + ".txt";
     if (fs::exists(strHistoryPath) && fs::file_size(strHistoryPath) > 0) {
         std::string strArchive = DATA_DIR + "Archive_LichSu" + strId + "_" + std::to_string(std::time(nullptr)) + ".bak";
@@ -396,8 +383,7 @@ void FileService::initSampleData() {
         }
     }
 
-    // 3. Khoi tao TheTu.txt va cac file [ID].txt neu he thong chua tung duoc khoi tao
-    // Su dung marker .system_initialized de tranh phuc sinh de du lieu khi TheTu.txt bi lam rong boi Admin
+    // 3. Khoi tao TheTu.txt va cac file [ID].txt neu he thong chua tung duoc khoi tao + marker .system_initialized 
     std::string strMarkerPath = DATA_DIR + ".system_initialized";
     std::string strTheTuPath = DATA_DIR + "TheTu.txt";
     if (!fs::exists(strMarkerPath)) {
@@ -433,7 +419,6 @@ void FileService::initSampleData() {
             }
         }
 
-        // Tao file marker ghi nhan khoi tao lan dau thanh cong
         std::ofstream foutMarker(strMarkerPath);
         if (foutMarker.is_open()) {
             foutMarker << "INITIALIZED\n";
@@ -442,9 +427,7 @@ void FileService::initSampleData() {
     }
 }
 
-/**********************************************************
- * Ham noi bo: Khử trùng chuỗi ghi nhật ký (chống CWE-117 Log Injection)
- **********************************************************/
+//Ham noi bo: Khử trùng chuỗi ghi nhật ký (chống CWE-117)
 static std::string sanitizeLogField(const std::string& strInput) {
     std::string strClean = strInput;
     for (char& c : strClean) {

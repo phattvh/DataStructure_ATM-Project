@@ -50,14 +50,15 @@ ErrorCode Account::canWithdraw(long lAmount) const {
     if (lAmount < lMinTrans) {
         return ERR_INVALID_AMOUNT;
     }
+    
     if (lAmount % lMinTrans != 0) {
         return ERR_NOT_MULTIPLE;
     }
-    // Phong chong tran so nguyen (signed integer underflow / UB)
-    // khi lAmount rat lon (vi du LONG_MAX) vuot qua so du hien tai
+
     if (this->_lBalance < lAmount || (this->_lBalance - lAmount) < lMinReserve) {
         return ERR_INSUFFICIENT_FUNDS;
     }
+    
     return ERR_NONE;
 }
 
@@ -65,6 +66,7 @@ bool Account::withdraw(long lAmount) {
     if (this->canWithdraw(lAmount) != ERR_NONE) {
         return false;
     }
+    
     this->_lBalance -= lAmount;
     return true;
 }
@@ -73,7 +75,7 @@ bool Account::deposit(long lAmount) {
     if (lAmount <= 0) {
         return false;
     }
-    // Phong chong tran so nguyen (integer overflow)
+
     if (std::numeric_limits<long>::max() - this->_lBalance < lAmount) {
         return false;
     }

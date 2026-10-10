@@ -18,18 +18,12 @@
 
 namespace fs = std::filesystem;
 
-//=============================================================================
 // Constructor
-//=============================================================================
-
 AdminController::AdminController() {
-    // Cac LinkedList duoc khoi tao rong qua constructor mac dinh
+
 }
 
-//=============================================================================
 // Tai du lieu tu file vao RAM
-//=============================================================================
-
 bool AdminController::loadAllData() {
     this->_listAdmins.clear();
     this->_listCards.clear();
@@ -42,10 +36,7 @@ bool AdminController::loadAllData() {
     return bAdmins && bCards;
 }
 
-//=============================================================================
 // Xac thuc mat khau Admin
-//=============================================================================
-
 bool AdminController::verifyAdmin(const std::string& strUser,
                                   const std::string& strPass) const {
     const Admin* pAdmin = this->_listAdmins.findIf([&strUser](const Admin& a) {
@@ -54,10 +45,7 @@ bool AdminController::verifyAdmin(const std::string& strUser,
     return (pAdmin != nullptr) && pAdmin->verifyPassword(strPass);
 }
 
-//=============================================================================
 // Chuc nang 1: Xem danh sach the tu
-//=============================================================================
-
 void AdminController::viewCardList() const {
     ConsoleView::printHeader("DANH SACH THE TU HE THONG");
 
@@ -106,10 +94,7 @@ void AdminController::viewCardList() const {
     ConsoleView::pauseScreen();
 }
 
-//=============================================================================
 // Chuc nang 2: Them tai khoan the moi (DoD: tao dung 2 file)
-//=============================================================================
-
 void AdminController::addNewCard() {
     ConsoleView::printHeader("THEM TAI KHOAN THE TU MOI");
 
@@ -136,7 +121,6 @@ void AdminController::addNewCard() {
             continue;
         }
 
-        // Chặn ghi đè tệp tin tài khoản mồ côi trên đĩa
         if (fs::exists(DATA_DIR + strNewId + ".txt")) {
             ConsoleView::printError("Tap tin tai khoan " + strNewId + ".txt da ton tai tren dia! Vui long chon ID khac.");
             continue;
@@ -195,7 +179,7 @@ void AdminController::addNewCard() {
         break;
     }
 
-    // Nhap loai tien te (kiem tra dinh dang 3-5 chu cai viet hoa)
+    // Nhap loai tien te 
     std::string strCurrency;
     while (true) {
         strCurrency = ConsoleView::inputLine("Don vi tien te (Enter de chon VND): ");
@@ -258,10 +242,7 @@ void AdminController::addNewCard() {
     ConsoleView::pauseScreen();
 }
 
-//=============================================================================
 // Chuc nang 3: Xoa tai khoan the tu
-//=============================================================================
-
 void AdminController::deleteCard() {
     ConsoleView::printHeader("XOA TAI KHOAN THE TU");
 
@@ -324,7 +305,7 @@ void AdminController::deleteCard() {
         return;
     }
 
-    // Xoa triet de khoi RAM (moi ban sao neu co)
+    // Xoa khoi RAM (moi ban sao neu co)
     while (this->_listCards.removeIf([&strDelId](const Card& c) {
         return c.getId() == strDelId;
     })) {}
@@ -370,10 +351,7 @@ void AdminController::deleteCard() {
     ConsoleView::pauseScreen();
 }
 
-//=============================================================================
 // Chuc nang 4: Mo khoa the bi khoa
-//=============================================================================
-
 void AdminController::unlockCard() {
     ConsoleView::printHeader("MO KHOA THE TU");
 
@@ -492,12 +470,8 @@ void AdminController::unlockCard() {
     ConsoleView::pauseScreen();
 }
 
-//=============================================================================
 // processAdminLogin: Dang nhap Admin
-//=============================================================================
-
 bool AdminController::processAdminLogin() {
-    // Dam bao du lieu duoc nap tu dia
     this->loadAllData();
 
     ConsoleView::printHeader("DANG NHAP QUAN TRI VIEN (ADMIN)");
@@ -522,10 +496,7 @@ bool AdminController::processAdminLogin() {
     }
 }
 
-//=============================================================================
 // processAdminMenu: Vong lap Menu Admin
-//=============================================================================
-
 void AdminController::processAdminMenu() {
     while (true) {
         ConsoleView::printAdminMenu();

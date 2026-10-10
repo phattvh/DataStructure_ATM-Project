@@ -53,8 +53,6 @@ std::string Transaction::getDetail() const {
 }
 
 std::string Transaction::formatForFile() const {
-    // Dinh dang luu file phan tach bang ky tu '|':
-    // [TIMESTAMP]|[TYPE_NUM]|[AMOUNT]|[DETAIL]
     return this->_strTimestamp + "|" +
            std::to_string(static_cast<int>(this->_eType)) + "|" +
            std::to_string(this->_lAmount) + "|" +
@@ -102,7 +100,6 @@ Transaction Transaction::parseFromFileLine(const std::string& strId, const std::
         vecTokens.push_back(trimToken(strToken));
     }
 
-    // Neu khong phai format co dau '|', coi nhu dong van ban tu do
     if (vecTokens.size() < 4) {
         return Transaction(strId, WITHDRAW, 0, "", strLine);
     }

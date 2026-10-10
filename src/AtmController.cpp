@@ -15,7 +15,7 @@ AtmController::~AtmController() {
 }
 
 bool AtmController::initData() {
-    // Dam bao thu muc va du lieu mau luon ton tai (Auto-Recovery)
+    // Dam bao thu muc va du lieu mau luon ton tai
     FileService::initSampleData();
 
     this->_listAdmins.clear();
@@ -70,10 +70,7 @@ void AtmController::cleanupSession() {
     this->_eCurrentRole = ROLE_NONE;
 }
 
-// ============================================================================
-// PHÂN HỆ QUẢN TRỊ VIÊN (ADMIN MODULE)
-// ============================================================================
-
+//ADMIN MODULE
 bool AtmController::authenticateAdmin(const std::string& strUser, const std::string& strPass) const {
     if (strUser.empty() || strPass.empty()) {
         return false;
@@ -112,12 +109,12 @@ void AtmController::processAdminLogin() {
         this->_eCurrentRole = ROLE_ADMIN;
         ConsoleView::pauseScreen();
 
-        // Tich hop module AdminController cua Member A vao luong he thong chinh
+        // Tich hop module AdminController vao luong he thong chinh
         AdminController adminCtrl;
         adminCtrl.loadAllData();
         adminCtrl.processAdminMenu();
 
-        // Dong bo lai du lieu cua AtmController sau khi Admin cap nhat
+        // Dong bo lai du lieu cua AtmController sau khi cap nhat
         this->initData();
         this->cleanupSession();
     } else {
@@ -179,7 +176,7 @@ ErrorCode AtmController::addCardAccount(const std::string& strId,
                                         const std::string& strName,
                                         long lInitialBalance,
                                         const std::string& strCurrency) {
-    // 1. Kiem tra dinh dang ID (dung 14 chu so)
+    // 1. Kiem tra dinh dang ID 
     if (strId.length() != static_cast<size_t>(ID_LENGTH)) {
         return ERR_INVALID_FORMAT;
     }
@@ -189,7 +186,7 @@ ErrorCode AtmController::addCardAccount(const std::string& strId,
         }
     }
 
-    // 2. Kiem tra ten chu the khong duoc de trong va khong chua ky tu phan cach '|', '\n', '\r'
+    // 2. Kiem tra ten chu the
     size_t iStart = strName.find_first_not_of(" \t\r\n");
     if (iStart == std::string::npos) {
         return ERR_INVALID_FORMAT;
@@ -302,12 +299,12 @@ ErrorCode AtmController::deleteCardAccount(const std::string& strId) {
         strAccName = acc.getName();
     }
 
-    // 2. Xoa the khoi danh sach the trong RAM (xoa triet de moi ban sao neu co)
+    // 2. Xoa the khoi danh sach the trong RAM (xoa moi ban sao neu co)
     while (this->_listCards.removeIf([&](const Card& c) {
         return c.getId() == strId;
     })) {}
 
-    // 3. Neu the dang trong danh sach khoa, xoa triet de khoi danh sach khoa trong RAM
+    // 3. Neu the dang trong danh sach khoa, xoa khoi danh sach khoa trong RAM
     bool bWasLocked = false;
     while (this->_listLockedIds.removeIf([&](const std::string& id) {
         return id == strId;
@@ -327,7 +324,7 @@ ErrorCode AtmController::deleteCardAccount(const std::string& strId) {
     // 5. Xoa tap tin thong tin tai khoan data/[ID].txt (giu lai file LichSu[ID].txt de tra soat)
     FileService::deleteAccountFile(strId);
 
-    // 6. Ghi nhat ky kiem toan quan tri (Admin Audit Log)
+    // 6. Admin audit log write
     std::string strLogDetail = "Xoa the " + strId;
     if (!strAccName.empty()) {
         strLogDetail += " (" + strAccName + ")";
@@ -411,7 +408,7 @@ ErrorCode AtmController::unlockCardAccount(const std::string& strId) {
         FileService::saveCards(this->_listCards);
     }
 
-    // 5. Ghi nhat ky kiem toan quan tri (Admin Audit Log)
+    // 5. Ghi Admin audit log
     FileService::appendAdminLog("UNLOCK_CARD", "Mo khoa the " + strId);
 
     return ERR_NONE;
@@ -476,12 +473,9 @@ void AtmController::adminUnlockCard() {
     }
 }
 
-// ============================================================================
-// PHÂN HỆ KHÁCH HÀNG (USER MODULE)
-// ============================================================================
-
+//USER MODULE
 void AtmController::processUserLogin() {
-    this->cleanupSession(); // Dam bao phien cu duoc giai phong hoan toan truoc khi dang nhap
+    this->cleanupSession();
     ConsoleView::clearScreen();
     ConsoleView::printHeader("DANG NHAP KHACH HANG (USER)");
 
@@ -593,19 +587,12 @@ void AtmController::processUserMenu() {
         return;
     }
 
-    // Chuyen giao quyen dieu khien phien cho UserController
-    // Moi giao dich (Rut tien, Chuyen tien, Doi PIN) deu duoc UserController
-    // luu tru nguyen tu tuc thi xuong dia (Immediate Persistence / ACID Durability).
     UserController::runUserSession(*(this->_pCurrentCard), *(this->_pCurrentAccount));
 
-    // Ket thuc phien lam viec: Giai phong tai nguyen phien an toan
     this->cleanupSession();
 }
 
-// ============================================================================
-// GETTERS PHỤC VỤ KIỂM THỬ TỰ ĐỘNG
-// ============================================================================
-
+// GETTERS CHO KIEM THU
 const LinkedList<Admin>& AtmController::getAdmins() const {
     return this->_listAdmins;
 }

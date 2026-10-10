@@ -83,7 +83,6 @@ bool UserController::enforceDefaultPinChange(Card& card) {
             continue;
         }
 
-        // Luu ngay ma PIN moi xuong dia (TheTu.txt) chong mat mat trang thai
         FileService::updateCardPin(card.getId(), strNewPin);
 
         ConsoleView::printSuccess("Doi ma PIN lan dau thanh cong! Vui long ghi nho ma PIN moi.");
@@ -110,7 +109,7 @@ ErrorCode UserController::processWithdrawAndPersist(Account& acc, long lAmount, 
 
     bool bSaveOk = FileService::saveAccount(acc);
     if (!bSaveOk) {
-        acc.deposit(lAmount); // Rollback trong RAM
+        acc.deposit(lAmount); 
         return ERR_FILE_NOT_FOUND;
     }
 
@@ -142,7 +141,6 @@ ErrorCode UserController::processTransfer(Account& senderAcc, Account& receiverA
 
     // Cong tien nguoi nhan
     if (!receiverAcc.deposit(lAmount)) {
-        // Co che Rollback bao dam tinh nguyen tu ACID: hoan tien lai nguoi gui
         senderAcc.deposit(lAmount);
         return ERR_SYSTEM_OVERFLOW;
     }

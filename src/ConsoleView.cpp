@@ -22,10 +22,6 @@ static void linuxSignalHandler(int iSig) {
     _exit(128 + iSig);
 }
 
-/**********************************************************
- * @Description Lop RAII tu dong bat va tat terminal raw mode
- * dam bao khong lam hong trang thai terminal khi ket thuc hoac khi bi ngat Ctrl+C
- **********************************************************/
 class LinuxTerminalRawGuard {
 private:
     struct termios _oldTerm;
@@ -62,7 +58,7 @@ public:
 };
 #endif
 
-// Dinh nghia cac ma mau ANSI escape
+// Dinh nghia ma mau ANSI
 const std::string ANSI_RESET  = "\033[0m";
 const std::string ANSI_BOLD   = "\033[1m";
 const std::string ANSI_RED    = "\033[31m";
@@ -109,8 +105,6 @@ std::string ConsoleView::inputPassword(const std::string& strPrompt, std::istrea
     }
 
 #ifndef _WIN32
-    // Neu dau vao khong phai terminal truc tiep (vi du chay test tu dong qua pipe),
-    // doc truc tiep tu std::cin de tranh xung dot bo dem voi read(STDIN_FILENO)
     if (!isatty(STDIN_FILENO)) {
         std::string strPass = "";
         if (std::getline(std::cin, strPass)) {
@@ -166,7 +160,7 @@ std::string ConsoleView::inputPassword(const std::string& strPrompt, std::istrea
             break;
         }
 
-        // Xu ly chuoi thoat ANSI Escape Sequences (phim mui ten, Delete, v.v.)
+        // Xu ly chuoi ANSI escape sequences 
         if (cKey == 27) {
             struct termios drainTerm;
             if (tcgetattr(STDIN_FILENO, &drainTerm) >= 0) {
@@ -176,7 +170,7 @@ std::string ConsoleView::inputPassword(const std::string& strPrompt, std::istrea
 
                 char cSeq[8];
                 while (read(STDIN_FILENO, cSeq, sizeof(cSeq)) > 0) {
-                    // Bo qua toan bo byte chuoi escape con lai
+
                 }
 
                 drainTerm.c_cc[VMIN] = 1;
@@ -206,7 +200,7 @@ std::string ConsoleView::inputPassword(const std::string& strPrompt, std::istrea
             continue;
         }
 
-        // Ky tu hop le: gioi han toi da 32 ky tu phong chong tan cong Denial of Service (DoS)
+        // gioi han toi da 32 ky tu 
         if (strPassword.length() < 32) {
             strPassword.push_back(cKey);
             std::cout << '*' << std::flush;
