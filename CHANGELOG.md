@@ -9,6 +9,53 @@ Dự án được thực hiện bởi nhóm 3 thành viên:
 
 ---
 
+## [2.3.0] - 2026-10-10: Phat hanh Chinh thuc Toan dien - Final Production Release (RC-Final)
+
+Phien ban phat hanh chinh thuc toan dien, hoan tat toan bo cac yeu cau nghiem ngat tu Senior Code Review, nang cap bao mat mat ma hoc, dong co da tien te va quy doi ngoai te, khoa file lien tien trinh va dong bo ho so thiet ke chi tiet 5.1 - 5.15.
+
+### Bao mat & Mat ma hoc (Security & Cryptography)
+- **Cai dat Tieu chuan Bam Salted-MD5 (RFC 1321)**:
+  - *Dong gop: Thanh vien C (Phat)*
+  - Xay dung lop doc lap `SecurityService` thuan C++ (Zero external dependencies).
+  - Tich hop chuoi muoi bi mat `ATM_PIN_SECRET_SALT_2026_#!` cho ma PIN va `ADMIN_SECURE_AUTH_PEPPER_2026_@$` cho mat khau Admin.
+  - Xac thuc thong minh da tang `verifyHash` ho tro ca ma bam va du lieu cu, tu choi ma hash tieng truc tiep qua ban phim.
+- **Luu Tru Ben Vung So Lan Nhap Sai PIN (Persistent Failed PIN Attempts)**:
+  - *Dong gop: Thanh vien C (Phat) & Thanh vien B (Tri)*
+  - Ghi nhan so lan nhap sai ma PIN lien tiep vao `data/FailedAttempts.txt` bang Atomic Write.
+  - Bao toan bo dem sai qua cac lan tat/mo ung dung hoac reboot he thong, khoa the vinh vien khi dat nguong 3 lan.
+
+### He thong File & Dong bo Du lieu (File System & Concurrency)
+- **Khoa Doc Quyen Lien Tien Trinh (Inter-Process File Lock)**:
+  - *Dong gop: Thanh vien C (Phat)*
+  - Lop RAII `FileLockGuard` su dung `flock(fd, LOCK_EX)` tren POSIX/Linux va `LockFileEx` tren Windows.
+  - Ngan chan hoan toan xung dot ghi file (Race Condition) va Lost Update khi nhieu may ATM chay song song tren cung co so du lieu.
+- **Dong Bo So Du Tu Dia Truoc Giao Dich (Anti-Stale Read / Anti-Double Spending)**:
+  - *Dong gop: Thanh vien C (Phat) & Thanh vien A (Tuan)*
+  - Tai lap so du thuc te tu dia qua `FileService::loadAccount` ngay truoc khi kiem tra dieu kien va tru tien trong ca rut tien, rut quy doi va chuyen khoan.
+- **Luu Tru An Toan Lich Su Khi Xoa The (History Archival)**:
+  - *Dong gop: Thanh vien C (Phat)*
+  - Khi xoa the qua Admin hoac ATM, doi ten `LichSu[ID].txt` thanh `data/Archive_LichSu[ID]_[timestamp].bak` de phuc vu kiem toan va bao ve quyen rieng tu cho chu the moi.
+
+### Nghiep vu Tai chinh & Dong co Da Tien te (Multi-Currency & FX Engine)
+- **Ho tro Da Tien te Toan dien (VND, USD, EUR, JPY, GBP, SGD)**:
+  - *Dong gop: Thanh vien A (Tuan) & Thanh vien C (Phat)*
+  - Cau hinh `CurrencyConfig` va `getCurrencyConfig` voi han muc giao dich min, max va so du duy tri rieng biet.
+  - Giao dien nhap so tien `inputMoneyRange` kiem soat bien chat che, chong tran so `long`.
+  - Quy tac rut ngoai te quy doi sang VND bang phep chia lam tron len (Ceiling Division), in bien lai chenh lech lam tron minh bach.
+  - Chan tuyet doi chuyen tien lien tien te de bao toan gia tri tai chinh.
+
+### Kiem thu & Tai lieu Ky thuat (Testing & Detailed Design)
+- **Mo rong Bo Kiem thu Tu dong Toan dien**:
+  - *Dong gop: Ca 3 thanh vien*
+  - Tang tong so test cases trong `test_runner` len 147 test cases chuc nang (100% PASS, 53 ms).
+  - 67/67 kịch bản kiểm thử rò rỉ bộ nhớ (0 bytes leaked tren 150,360 new/delete).
+  - Tong cong 460+ assertions tren 6 tap tin nhi phan kiem thu.
+- **Hoan thien Tai lieu Thiet ke Chi tiet Muc 5.1 - 5.15**:
+  - *Dong gop: Thanh vien C (Phat)*
+  - Soan thao toan bo dac ta kien truc lop, bang thuoc tinh, phuong thuc, giai thuat Big-O, cong thuc toan hoc va luoc do luu tru file tai `docs/05_thiet_ke_chi_tiet.md`.
+
+---
+
 ## [2.2.0] - 2026-10-10: Hoàn thiện Toàn diện, Gia cố Chiều sâu & Chuẩn bị Bàn giao (Final Production Hardening)
 
 Phiên bản hoàn thiện toàn diện, giải quyết toàn bộ các lỗ hổng biên phát hiện qua vòng Adversarial Code Review, tối ưu hóa trải nghiệm người dùng và chuẩn hóa 100% hồ sơ tài liệu kỹ thuật.

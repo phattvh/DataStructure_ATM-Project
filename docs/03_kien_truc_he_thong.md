@@ -25,21 +25,27 @@ graph TD
         M4["Transaction"]
     end
 
-    subgraph Storage_Layer["4. TẦNG DỊCH VỤ DỮ LIỆU (Data Service Layer)"]
-        FS["FileService<br>- atomicWriteFile có PID và .bak<br>- Đọc / Ghi các tệp .txt<br>- Tuân thủ Rule 18 Open/Close"]
+    subgraph Security_Layer["4. TẦNG BẢO MẬT & MÃ HÓA (Security Service Layer)"]
+        SS["SecurityService<br>- Thuật toán băm MD5 chuẩn RFC 1321<br>- Salted PIN & Admin Pepper<br>- Xác thực đa tầng thông minh"]
     end
 
-    subgraph Foundation_Layer["5. TẦNG CẤU TRÚC DỮ LIỆU (Data Structure Layer)"]
+    subgraph Storage_Layer["5. TẦNG DỊCH VỤ DỮ LIỆU (Data Service Layer)"]
+        FS["FileService<br>- Khóa độc quyền liên tiến trình flock<br>- atomicWriteFile có PID và .bak<br>- Đọc / Ghi các tệp .txt<br>- Tuân thủ Rule 18 Open/Close"]
+    end
+
+    subgraph Foundation_Layer["6. TẦNG CẤU TRÚC DỮ LIỆU (Data Structure Layer)"]
         LL["Template LinkedList&lt;T&gt;<br>- Quản lý danh sách trong RAM<br>- Thu hồi bộ nhớ Destructor Rule 17"]
     end
 
-    subgraph File_System["6. HỆ THỐNG TỆP TIN (Disk Storage)"]
+    subgraph File_System["7. HỆ THỐNG TỆP TIN (Disk Storage)"]
         F1[("data/Admin.txt")]
         F2[("data/TheTu.txt")]
         F3[("data/KhoaThe.txt")]
         F4[("data/ID.txt")]
         F5[("data/LichSuID.txt")]
         F6[("data/AdminLog.txt")]
+        F7[("data/FailedAttempts.txt")]
+        F8[("data/.atm_data.lock")]
     end
 
     CV <-->|Nhập / Xuất giao diện| AC
@@ -51,8 +57,10 @@ graph TD
 
     UC -->|Thao tác số dư| M3
     UC -->|Đổi PIN / Khóa thẻ| M2
+    UC -->|Xác thực mã PIN| SS
     UC -->|Lưu tức thì| FS
 
+    ADC -->|Xác thực Admin| SS
     ADC -->|Cập nhật danh sách thẻ| FS
     FS <-->|Đọc / Ghi tệp đĩa| File_System
 ```
@@ -107,6 +115,14 @@ graph TD
   - Vô hiệu hóa Copy Constructor và Copy Assignment Operator (`= delete`) để loại bỏ hoàn toàn lỗi sao chép nông gây Double Free.
   - Thay thế hoàn toàn cho `std::vector` hoặc `std::list` của STL.
 
+### 6. Tầng Bảo mật & Mã hóa (Security Service Layer - `SecurityService`)
+
+- **Nhiệm vụ**: Cung cấp thuật toán băm mật mã học RFC 1321 MD5 thuần C++ (Zero-dependency).
+- **Đặc điểm**:
+  - Tích hợp chuỗi muối tĩnh (Salt) cho mã PIN và chuỗi tiêu bí mật (Pepper) cho mật khẩu Admin.
+  - Cơ chế xác thực đa tầng thông minh `verifyHash()` hỗ trợ cả mã băm lẫn plaintext tương thích ngược.
+  - Chống giả mạo độ dài và ngăn chặn tiêm chuỗi băm trực tiếp qua bàn phím.
+
 ---
 
 ## III. CƠ CHẾ BẢO VỆ & XỬ LÝ NGOẠI LỆ
@@ -119,6 +135,10 @@ graph TD
    - Khi khởi động, nếu hệ thống không tìm thấy thư mục `data/` hoặc các tệp tin cơ sở (`Admin.txt`, `TheTu.txt`), phương thức `FileService::initSampleData()` sẽ tự động tạo thư mục và sinh dữ liệu mẫu ban đầu kèm tệp đánh dấu `.system_initialized`.
 4. **Bảo toàn Tính Nguyên tử (ACID Rollback)**:
    - Trong giao dịch chuyển tiền hai chiều, nếu thao tác ghi số dư người nhận gặp sự cố, hệ thống tự động hoàn tiền lại nguyên vẹn cho người gửi và hủy giao dịch an toàn.
+5. **Khóa Độc quyền Liên Tiến trình (Inter-Process File Mutex)**:
+   - Áp dụng `flock(LOCK_EX)` trên tệp `.atm_data.lock` ngăn chặn xung đột ghi tệp đồng thời giữa nhiều phiên hoặc máy ATM.
+6. **Lưu Bền vững Bộ đếm Sai PIN (Persistent Failed Attempts)**:
+   - Ghi nhận số lần nhập sai PIN liên tiếp vào `data/FailedAttempts.txt`, bảo toàn qua các lần tắt/mở ứng dụng để chống Brute-Force.
 
 ---
 
@@ -138,9 +158,11 @@ DataStructure_ATM-Project/
 │   ├── Tài Liệu Đọc.pdf             # Quy chuẩn C++ Coding Standard V2
 │   └── Mau_BaoCao_DoAn.docx
 ├── data/                             # Thư mục cơ sở dữ liệu tệp tin (.txt)
-│   ├── Admin.txt                     # Danh sách tài khoản quản trị
-│   ├── TheTu.txt                     # Danh sách thẻ từ (ID 14 số và mã PIN)
+│   ├── Admin.txt                     # Danh sách tài khoản quản trị (đã băm bảo mật)
+│   ├── TheTu.txt                     # Danh sách thẻ từ (ID 14 số và mã PIN băm)
 │   ├── KhoaThe.txt                   # Danh sách ID thẻ bị khóa
+│   ├── FailedAttempts.txt            # Nhật ký đếm sai mã PIN bền vững
+│   ├── .atm_data.lock                # Tệp khóa độc quyền liên tiến trình
 │   ├── [ID].txt                      # Tệp chi tiết từng tài khoản (ID, Tên, Số dư, Tiền tệ)
 │   ├── LichSu[ID].txt                # Nhật ký biến động số dư theo thời gian thực
 │   └── AdminLog.txt                  # Nhật ký kiểm toán thao tác quản trị
@@ -151,17 +173,18 @@ DataStructure_ATM-Project/
 │   ├── 02_yeu_cau_va_pham_vi.md      # Phạm vi nghiệp vụ và đặc tả yêu cầu
 │   ├── 03_kien_truc_he_thong.md      # Kiến trúc phân tầng Layered Architecture
 │   ├── 04_ctdl_va_thuat_toan.md      # Thiết kế Template LinkedList và phân tích Big-O
-│   ├── 05_thiet_ke_chi_tiet.md       # Thiết kế chi tiết từng Class và Method
+│   ├── 05_thiet_ke_chi_tiet.md       # Thiết kế chi tiết từng Class và Method (Mục 5.1 - 5.15)
 │   ├── 06_ke_hoach_trien_khai.md     # Phân công công việc và lộ trình 14 ngày
 │   ├── 07_ke_hoach_kiem_thu.md       # Kế hoạch kiểm thử và ma trận test cases
 │   └── 08_so_do_uml_va_luong_du_lieu.md # Sơ đồ UML Class, DFD và Sequence Diagram
 ├── include/                          # Tệp tin Header (*.h)
-│   ├── Common.h                      # Hằng số, Enum, ErrorCode dùng chung
+│   ├── Common.h                      # Hằng số, Enum, ErrorCode, CurrencyConfig dùng chung
 │   ├── LinkedList.h                  # Template Class Cấu trúc dữ liệu tự tạo
 │   ├── Admin.h                       # Khai báo lớp Admin
 │   ├── Card.h                        # Khai báo lớp Card
 │   ├── Account.h                     # Khai báo lớp Account
 │   ├── Transaction.h                 # Khai báo lớp Transaction
+│   ├── SecurityService.h             # Dịch vụ mã hóa và băm Salted-MD5
 │   ├── FileService.h                 # Dịch vụ thao tác tệp tin vật lý
 │   ├── ConsoleView.h                 # Tiện ích giao diện Console và ANSI UX
 │   ├── AdminController.h             # Bộ điều phối Phân hệ Quản trị Admin
@@ -172,6 +195,7 @@ DataStructure_ATM-Project/
 │   ├── Card.cpp
 │   ├── Account.cpp
 │   ├── Transaction.cpp
+│   ├── SecurityService.cpp
 │   ├── FileService.cpp
 │   ├── ConsoleView.cpp
 │   ├── AdminController.cpp
@@ -179,7 +203,7 @@ DataStructure_ATM-Project/
 │   ├── AtmController.cpp
 │   └── main.cpp                      # Điểm vào chính của chương trình
 ├── test/                             # Toàn bộ mã nguồn kiểm thử tự động
-│   ├── test.cpp                      # Test suite tổng hợp
+│   ├── test.cpp                      # Test suite tổng hợp (147 test cases)
 │   ├── test_member_a.cpp             # Test Unit Member A (Phase 1)
 │   ├── test_member_c.cpp             # Test Unit Member C (Phase 1)
 │   ├── test_phase_1_AC.cpp           # Test tích hợp Member A và C (Phase 1)
@@ -188,7 +212,7 @@ DataStructure_ATM-Project/
 │   ├── test_phase_2_c.cpp            # Test Member C (Phase 2)
 │   ├── test_phase_3.cpp              # Test tích hợp toàn trình (Phase 3)
 │   ├── test_phase_3_a.cpp            # Test nghiệp vụ User và Giao dịch (Phase 3 Member A)
-│   └── test_memory_leak.cpp          # Kiểm định rò rỉ bộ nhớ (Phase 4 Member B)
+│   └── test_memory_leak.cpp          # Kiểm định rò rỉ bộ nhớ (Phase 4 Member B - 67 tests)
 └── scripts/                          # Kịch bản tự động hóa
     └── valgrind_check.sh             # Script kiểm tra Valgrind Memcheck
 ```

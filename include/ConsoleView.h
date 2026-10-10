@@ -76,6 +76,13 @@ public:
     static std::string inputPin(const std::string& strPrompt);
 
     /**********************************************************
+     * @Description Dinh dang so tien co dau phay ngan cach hang nghin
+     * @param lAmount So tien can dinh dang
+     * @return Chuoi tien da dinh dang (vi du: "50,000" hoac "1,000,000")
+     **********************************************************/
+    static std::string formatMoney(long lAmount);
+
+    /**********************************************************
      * @Description Nhap so tien an toan theo dong, chong troi lenh,
      * chan so thuc, chu cai, so am va xu ly EOF khong bi treo loop
      * @param strPrompt Loi nhac nhap
@@ -84,6 +91,22 @@ public:
      **********************************************************/
     static long inputMoney(const std::string& strPrompt,
                            std::istream& inStream = std::cin);
+
+    /**********************************************************
+     * @Description Nhap so tien co kiem tra khoang gioi han [lMin, lMax]
+     * Hien thi ro rang mien gia tri hop le neu vuot qua gioi han
+     * @param strPrompt Loi nhac nhap
+     * @param lMin Han muc toi thieu
+     * @param lMax Han muc toi da
+     * @param strCurrency Don vi tien te
+     * @param inStream Luong du lieu dau vao
+     * @return So tien hop le kieu long
+     **********************************************************/
+    static long inputMoneyRange(const std::string& strPrompt,
+                                long lMin,
+                                long lMax,
+                                const std::string& strCurrency = "VND",
+                                std::istream& inStream = std::cin);
 
     /**********************************************************
      * @Description Nhap lua chon menu trong khoang [iMin, iMax] co bay loi

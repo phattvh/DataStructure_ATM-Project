@@ -208,11 +208,12 @@ ErrorCode AtmController::addCardAccount(const std::string& strId,
         return ERR_ID_EXISTS;
     }
 
-    // 4. Kiem tra so du ban dau: phai >= 50,000 va la boi so cua 50,000
-    if (lInitialBalance < MIN_BALANCE_RESERVE) {
+    // 4. Kiem tra so du ban dau theo cau hinh don vi tien te
+    CurrencyConfig cfg = getCurrencyConfig(strCurrency);
+    if (lInitialBalance < cfg.lMinReserve || lInitialBalance > cfg.lMaxBalance) {
         return ERR_INVALID_AMOUNT;
     }
-    if (lInitialBalance % MIN_TRANSACTION != 0) {
+    if (lInitialBalance % cfg.lMinTransaction != 0) {
         return ERR_NOT_MULTIPLE;
     }
 
@@ -321,8 +322,10 @@ ErrorCode AtmController::deleteCardAccount(const std::string& strId) {
         FileService::saveLockedIds(this->_listLockedIds);
     }
 
-    // 5. Xoa tap tin thong tin tai khoan data/[ID].txt (giu lai file LichSu[ID].txt de tra soat)
+    // 5. Xoa tap tin thong tin tai khoan data/[ID].txt va archive file LichSu[ID].txt de tra soat
     FileService::deleteAccountFile(strId);
+    FileService::archiveHistoryFile(strId);
+    FileService::resetFailedAttempts(strId);
 
     // 6. Admin audit log write
     std::string strLogDetail = "Xoa the " + strId;
@@ -401,6 +404,7 @@ ErrorCode AtmController::unlockCardAccount(const std::string& strId) {
     if (pCard != nullptr) {
         pCard->unlockCard();
     }
+    FileService::resetFailedAttempts(strId);
 
     // 4. Luu thay doi ben vung vao disk
     FileService::saveLockedIds(this->_listLockedIds);
@@ -532,7 +536,10 @@ void AtmController::processUserLogin() {
 
     if (!bAuth) {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        if (bOutLocked) {
+        int iPersistentFailed = FileService::recordFailedAttempt(strId);
+        pCard->setFailedAttempts(iPersistentFailed);
+        if (bOutLocked || iPersistentFailed >= MAX_FAILED_LOGINS) {
+            pCard->lockCard();
             auto pExistingLock = this->_listLockedIds.findIf([&](const std::string& id) {
                 return id == strId;
             });
@@ -549,6 +556,10 @@ void AtmController::processUserLogin() {
         ConsoleView::pauseScreen();
         return;
     }
+
+    // Dang nhap thanh cong: reset bo dem sai ben vung
+    FileService::resetFailedAttempts(strId);
+    pCard->resetFailedAttempts();
 
     // Dang nhap thanh cong -> Khoi tao phien lam viec
     this->_pCurrentCard = pCard;

@@ -34,20 +34,28 @@ Dự án áp dụng mô hình **Lập trình Hướng đối tượng (OOP)** v�
    - Tách bạch 100% giữa tệp giao diện khai báo `.h` và tệp hiện thực `.cpp`.
    - Sử dụng tường minh con trỏ `this->` (Rule 17) khi truy xuất thành viên nội bộ.
    - Định dạng chú thích hàm theo chuẩn `@Description`, `@return`, `@attention`.
-3. **Bảo mật và Xử lý Console (CLI UX)**:
+3. **Bảo mật và Mật mã học (Security & Cryptography)**:
+   - Thuật toán băm **Salted-MD5 (RFC 1321)** thuần C++ không phụ thuộc thư viện ngoài (`SecurityService`).
+   - Khóa thẻ tự động và **lưu bền vững số lần nhập sai PIN** vào `data/FailedAttempts.txt` qua các lần tắt/mở ứng dụng.
    - Cơ chế RAII `LinuxTerminalRawGuard` quản lý chế độ raw mode terminal.
    - Mã hóa thời gian thực mật khẩu Admin và mã PIN User thành ký tự `*` (hỗ trợ phím Backspace, drain chuỗi escape).
    - Giới hạn độ dài nhập liệu tối đa 32 ký tự, ngăn chặn tấn công tràn bộ đệm console DoS.
    - Định dạng giao diện trực quan bằng mã màu ANSI (Xanh lá: thành công, Đỏ: lỗi, Vàng: cảnh báo, Cyan: thông tin).
    - Bẫy lỗi ngoại lệ `cin.fail()` và tín hiệu `EOF` (`Ctrl+D`) chống sập chương trình hoặc lặp vô hạn.
 4. **Hệ thống Lưu trữ Tệp tin (Flat-file Storage) và Giao dịch ACID**:
-   - Quản lý và đồng bộ 5 loại tệp: `Admin.txt`, `TheTu.txt`, `KhoaThe.txt`, `[ID].txt`, `LichSu[ID].txt`.
-   - Cơ chế **Ghi tệp nguyên tử (Atomic Write)** qua tệp tạm `.tmp.<PID>` và `rename`, ngăn mất mát dữ liệu khi mất nguồn hoặc xung đột tiến trình.
+   - Quản lý và đồng bộ dữ liệu qua các tệp: `Admin.txt`, `TheTu.txt`, `KhoaThe.txt`, `FailedAttempts.txt`, `[ID].txt`, `LichSu[ID].txt`.
+   - **Khóa độc quyền liên tiến trình (`flock`)**: Ngăn chặn xung đột ghi đè dữ liệu khi nhiều tiến trình/máy ATM cùng chạy.
+   - Cơ chế **Ghi tệp nguyên tử (Atomic Write)** qua tệp tạm `.tmp.<PID>` và `rename`, ngăn mất mát dữ liệu khi mất nguồn hoặc crash.
    - Cơ chế **Hoàn tiền nguyên tử (Atomic Rollback)**: Tự động hoàn tiền cho người gửi nếu tài khoản nhận gặp lỗi I/O.
-   - Tự động lưu trữ (Archive `.bak`) tệp lịch sử khi tái tạo thẻ cũ nhằm bảo vệ quyền riêng tư.
-5. **Kiểm định Bộ nhớ (0 Bytes Leaked)**:
-   - 67/67 kịch bản kiểm thử bộ nhớ đạt kết quả PASS (100%).
-   - Kiểm thử tải cao 50.000 nodes qua 3 chu kỳ (150.306 lần `new`/`delete`), ghi nhận **0 bytes leaked, 0 double free**.
+   - Tự động lưu trữ (Archive `.bak`) tệp lịch sử khi tái tạo thẻ cũ nhằm bảo vệ quyền riêng tư và kiểm toán tài chính.
+5. **Động cơ Đa Tiền tệ & Quy đổi Ngoại tệ (Multi-Currency & FX Engine)**:
+   - Hỗ trợ đầy đủ các loại tiền tệ: `VND`, `USD`, `EUR`, `JPY`, `GBP`, `SGD` với hạn mức min/max và số dư duy trì riêng biệt.
+   - Quy tắc quy đổi rút tiền ngoại tệ nhận tiền mặt VND sử dụng phép chia trần (Ceiling Division), in biên lai minh bạch phần chênh lệch làm tròn.
+   - Chặn tuyệt đối chuyển tiền chéo loại tiền tệ nhằm bảo toàn giá trị tài chính.
+6. **Kiểm định Bộ nhớ và Kiểm thử Tự động (100% Passed)**:
+   - 147/147 kịch bản kiểm thử tự động toàn hệ thống đạt kết quả PASS (100%).
+   - 67/67 kịch bản kiểm thử bộ nhớ đạt chuẩn 0 byte leak.
+   - Kiểm thử tải cao 50.000 nodes qua 3 chu kỳ (150.360 lần `new`/`delete`), ghi nhận **0 bytes leaked, 0 double free**.
 
 ---
 

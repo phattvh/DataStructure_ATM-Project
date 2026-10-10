@@ -102,6 +102,12 @@ ErrorCode UserController::processWithdraw(Account& acc, long lAmount) {
 }
 
 ErrorCode UserController::processWithdrawAndPersist(Account& acc, long lAmount, std::string& strOutTimestamp) {
+    // Dong bo so du thuc te tu dia truoc khi thuc hien rut tien (chong Stale Read / Lost Update)
+    Account currentOnDisk;
+    if (FileService::loadAccount(acc.getId(), currentOnDisk) == ERR_NONE) {
+        acc.setBalance(currentOnDisk.getBalance());
+    }
+
     ErrorCode err = processWithdraw(acc, lAmount);
     if (err != ERR_NONE) {
         return err;
@@ -207,11 +213,14 @@ ErrorCode UserController::processTransferAndPersist(Account& senderAcc,
     if (!bSaveSender || !bSaveReceiver) {
         senderAcc.deposit(lAmount);
         receiverAcc.withdraw(lAmount);
-        FileService::saveAccount(senderAcc);
+        bool bRollbackSaved = FileService::saveAccount(senderAcc);
         if (bUseMock && pReceiverMock != nullptr) {
             *pReceiverMock = receiverAcc;
         }
-        return ERR_SYSTEM_OVERFLOW;
+        if (!bRollbackSaved) {
+            FileService::appendAdminLog("CRITICAL_ERROR", "Rollback saveAccount for sender " + senderAcc.getId() + " failed! Data desync on disk!");
+        }
+        return ERR_FILE_NOT_FOUND;
     }
 
     strOutTimestamp = getNowTimestamp();
@@ -304,6 +313,12 @@ bool UserController::displayTransactionHistory(const std::string& strAccountId, 
     int iTotalPages = (iTotalItems + PAGE_SIZE - 1) / PAGE_SIZE;
     int iCurrentPage = 1;
 
+    std::string strCurrency = "VND";
+    Account tempAcc;
+    if (FileService::loadAccount(strAccountId, tempAcc) == ERR_NONE) {
+        strCurrency = tempAcc.getCurrency();
+    }
+
     bool bViewing = true;
     while (bViewing) {
         ConsoleView::clearScreen();
@@ -327,7 +342,7 @@ bool UserController::displayTransactionHistory(const std::string& strAccountId, 
                 std::cout << std::left
                           << std::setw(22) << pCur->_data.getTimestamp()
                           << std::setw(15) << pCur->_data.getTypeName()
-                          << std::right << std::setw(12) << pCur->_data.getAmount() << " " << std::left << std::setw(5) << "VND"
+                          << std::right << std::setw(12) << pCur->_data.getAmount() << " " << std::left << std::setw(5) << strCurrency
                           << pCur->_data.getDetail() << "\n";
             }
             pCur = pCur->_pNext;
@@ -372,9 +387,11 @@ bool UserController::displayTransactionHistory(const std::string& strAccountId, 
 }
 
 void UserController::displayAccountInfo(const Account& acc) {
+    CurrencyConfig cfg = getCurrencyConfig(acc.getCurrency());
     ConsoleView::displayAccountDetails(acc.getId(), acc.getName(), acc.getBalance(), acc.getCurrency());
+    long lAvailable = (acc.getBalance() >= cfg.lMinReserve) ? (acc.getBalance() - cfg.lMinReserve) : 0;
     std::cout << "  So du kha dung: " 
-              << (acc.getBalance() >= MIN_BALANCE_RESERVE ? acc.getBalance() - MIN_BALANCE_RESERVE : 0) 
+              << ConsoleView::formatMoney(lAvailable)
               << " " << acc.getCurrency() << "\n";
     ConsoleView::pauseScreen();
 }
@@ -396,40 +413,180 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                 break;
             }
             case 2: {
-                ConsoleView::printHeader("GIAO DICH RUT TIEN");
-                std::cout << "  So du hien tai: " << acc.getBalance() << " " << acc.getCurrency() << "\n";
-                std::cout << "  Han muc toi thieu: " << MIN_TRANSACTION << " VND (la boi so 50,000 VND)\n";
-                std::cout << "  So du toi thieu duy tri: " << MIN_BALANCE_RESERVE << " VND\n\n";
+                CurrencyConfig cfg = getCurrencyConfig(acc.getCurrency());
+                if (cfg.strCode == "VND") {
+                    ConsoleView::printHeader("GIAO DICH RUT TIEN (VND)");
+                    std::cout << "  So du hien tai: " << ConsoleView::formatMoney(acc.getBalance()) << " VND\n";
+                    std::cout << "  Han muc toi thieu: " << ConsoleView::formatMoney(cfg.lMinTransaction) << " VND (la boi so " << ConsoleView::formatMoney(cfg.lMinTransaction) << " VND)\n";
+                    std::cout << "  So du toi thieu duy tri: " << ConsoleView::formatMoney(cfg.lMinReserve) << " VND\n\n";
 
-                long lAmount = ConsoleView::inputMoney("Nhap so tien can rut (0 = Huy): ");
-                if (lAmount == 0) {
-                    ConsoleView::printInfo("Da huy giao dich rut tien.");
-                    ConsoleView::pauseScreen();
-                    break;
-                }
+                    std::string strPrompt = "Nhap so tien can rut [" + ConsoleView::formatMoney(cfg.lMinTransaction) + " - " + 
+                                            ConsoleView::formatMoney(cfg.lMaxBalance) + " VND] (0 = Huy): ";
+                    long lAmount = ConsoleView::inputMoneyRange(strPrompt, cfg.lMinTransaction, cfg.lMaxBalance, "VND");
+                    if (lAmount == 0) {
+                        ConsoleView::printInfo("Da huy giao dich rut tien.");
+                        ConsoleView::pauseScreen();
+                        break;
+                    }
 
-                std::string strTime;
-                ErrorCode err = UserController::processWithdrawAndPersist(acc, lAmount, strTime);
-                if (err == ERR_INVALID_AMOUNT) {
-                    ConsoleView::printError("So tien rut toi thieu phai tu 50,000 VND!");
-                } else if (err == ERR_NOT_MULTIPLE) {
-                    ConsoleView::printError("So tien rut phai la boi so cua 50,000 VND!");
-                } else if (err == ERR_INSUFFICIENT_FUNDS) {
-                    ConsoleView::printError("So du khong du! Can giu lai it nhat 50,000 VND so du toi thieu.");
-                } else if (err == ERR_FILE_NOT_FOUND) {
-                    ConsoleView::printError("Loi I/O he thong: Khong the cap nhat so du xuong dia! Giao dich da bi huy.");
-                } else if (err == ERR_NONE) {
-                    ConsoleView::printSuccess("Rut tien thanh cong! Vui long nhan tien tai khe.");
-                    ConsoleView::printReceipt(acc.getId(), "RUT TIEN MAT", lAmount, acc.getBalance(), strTime, acc.getCurrency());
+                    std::string strTime;
+                    ErrorCode err = UserController::processWithdrawAndPersist(acc, lAmount, strTime);
+                    if (err == ERR_INVALID_AMOUNT) {
+                        ConsoleView::printError("So tien rut toi thieu phai tu " + ConsoleView::formatMoney(cfg.lMinTransaction) + " VND!");
+                    } else if (err == ERR_NOT_MULTIPLE) {
+                        ConsoleView::printError("So tien rut phai la boi so cua " + ConsoleView::formatMoney(cfg.lMinTransaction) + " VND!");
+                    } else if (err == ERR_INSUFFICIENT_FUNDS) {
+                        ConsoleView::printError("So du khong du! Can giu lai it nhat " + ConsoleView::formatMoney(cfg.lMinReserve) + " VND so du toi thieu.");
+                    } else if (err == ERR_FILE_NOT_FOUND) {
+                        ConsoleView::printError("Loi I/O he thong: Khong the cap nhat so du xuong dia! Giao dich da bi huy.");
+                    } else if (err == ERR_NONE) {
+                        ConsoleView::printSuccess("Rut tien thanh cong! Vui long nhan tien tai khe.");
+                        ConsoleView::printReceipt(acc.getId(), "RUT TIEN MAT", lAmount, acc.getBalance(), strTime, acc.getCurrency());
+                    } else {
+                        ConsoleView::printError("Rut tien that bai!");
+                    }
                 } else {
-                    ConsoleView::printError("Rut tien that bai!");
+                    // Tai khoan ngoai te (EUR, USD, JPY, GBP)
+                    ConsoleView::printHeader("GIAO DICH RUT TIEN (" + cfg.strCode + ")");
+                    std::cout << "  So du hien tai: " << ConsoleView::formatMoney(acc.getBalance()) << " " << cfg.strCode << "\n";
+                    std::cout << "  Ty gia ATM hien tai: 1 " << cfg.strCode << " = " << ConsoleView::formatMoney(cfg.lExchangeRateToVND) << " VND\n\n";
+                    std::cout << "  Chon phuong thuc rut tien:\n";
+                    std::cout << "    1. Rut tien mat " << cfg.strCode << " (Dong tien goc tai khoan)\n";
+                    std::cout << "    2. Quy doi sang tien mat VND tai ATM (1 " << cfg.strCode << " = " << ConsoleView::formatMoney(cfg.lExchangeRateToVND) << " VND)\n";
+                    std::cout << "    0. Quay lai menu\n";
+                    int iMethod = ConsoleView::inputMenuChoice(0, 2, "  Chon phuong thuc (0-2): ");
+
+                    if (iMethod == 0) {
+                        ConsoleView::printInfo("Da huy giao dich rut tien.");
+                        ConsoleView::pauseScreen();
+                        break;
+                    }
+
+                    if (iMethod == 1) {
+                        // Rut dong tien goc
+                        std::cout << "\n  Han muc toi thieu: " << ConsoleView::formatMoney(cfg.lMinTransaction) << " " << cfg.strCode 
+                                  << " (la boi so " << ConsoleView::formatMoney(cfg.lMinTransaction) << " " << cfg.strCode << ")\n";
+                        std::cout << "  So du toi thieu duy tri: " << ConsoleView::formatMoney(cfg.lMinReserve) << " " << cfg.strCode << "\n\n";
+
+                        std::string strPrompt = "Nhap so tien " + cfg.strCode + " can rut (0 = Huy): ";
+                        long lAmount = ConsoleView::inputMoneyRange(strPrompt, cfg.lMinTransaction, cfg.lMaxBalance, cfg.strCode);
+                        if (lAmount == 0) {
+                            ConsoleView::printInfo("Da huy giao dich rut tien.");
+                            ConsoleView::pauseScreen();
+                            break;
+                        }
+
+                        std::string strTime;
+                        ErrorCode err = UserController::processWithdrawAndPersist(acc, lAmount, strTime);
+                        if (err == ERR_INVALID_AMOUNT) {
+                            ConsoleView::printError("So tien rut toi thieu phai tu " + ConsoleView::formatMoney(cfg.lMinTransaction) + " " + cfg.strCode + "!");
+                        } else if (err == ERR_NOT_MULTIPLE) {
+                            ConsoleView::printError("So tien rut phai la boi so cua " + ConsoleView::formatMoney(cfg.lMinTransaction) + " " + cfg.strCode + "!");
+                        } else if (err == ERR_INSUFFICIENT_FUNDS) {
+                            ConsoleView::printError("So du khong du! Can giu lai it nhat " + ConsoleView::formatMoney(cfg.lMinReserve) + " " + cfg.strCode + " so du toi thieu.");
+                        } else if (err == ERR_NONE) {
+                            ConsoleView::printSuccess("Rut tien thanh cong! Vui long nhan tien tai khe.");
+                            ConsoleView::printReceipt(acc.getId(), "RUT TIEN MAT", lAmount, acc.getBalance(), strTime, acc.getCurrency());
+                        } else {
+                            ConsoleView::printError("Rut tien that bai!");
+                        }
+                    } else if (iMethod == 2) {
+                        // Quy doi sang VND
+                        std::cout << "\n  [QUY DOI NGOAI TE SANG TIEN MAT VND]\n";
+                        std::cout << "  Ty gia ATM ap dung: 1 " << cfg.strCode << " = " << ConsoleView::formatMoney(cfg.lExchangeRateToVND) << " VND\n";
+                        std::cout << "  So du toi thieu can duy tri: " << ConsoleView::formatMoney(cfg.lMinReserve) << " " << cfg.strCode << "\n\n";
+
+                        long lVndAmount = ConsoleView::inputMoneyRange("Nhap so tien mat VND muon nhan (boi so 50,000 VND, 0 = Huy): ",
+                                                                      MIN_TRANSACTION, 50000000L, "VND");
+                        if (lVndAmount == 0) {
+                            ConsoleView::printInfo("Da huy giao dich quy doi.");
+                            ConsoleView::pauseScreen();
+                            break;
+                        }
+                        if (lVndAmount % MIN_TRANSACTION != 0) {
+                            ConsoleView::printError("So tien mat VND rut tai cay phai la boi so cua 50,000 VND!");
+                            ConsoleView::pauseScreen();
+                            break;
+                        }
+
+                        if (cfg.lExchangeRateToVND <= 0) {
+                            ConsoleView::printError("Loi he thong: Ty gia quy doi ngoai te chua duoc cau hinh hop le!");
+                            ConsoleView::pauseScreen();
+                            break;
+                        }
+
+                        // Dong bo so du tu dia truoc khi quy doi ngoai te (chong Stale Read)
+                        Account currentOnDisk;
+                        if (FileService::loadAccount(acc.getId(), currentOnDisk) == ERR_NONE) {
+                            acc.setBalance(currentOnDisk.getBalance());
+                        }
+
+                        // Tinh so ngoai te bi tru
+                        long lDeduct = (lVndAmount + cfg.lExchangeRateToVND - 1) / cfg.lExchangeRateToVND;
+                        if (acc.getBalance() < lDeduct || (acc.getBalance() - lDeduct) < cfg.lMinReserve) {
+                            ConsoleView::printError("So du " + cfg.strCode + " khong du de quy doi! Can it nhat " +
+                                                    ConsoleView::formatMoney(lDeduct + cfg.lMinReserve) + " " + cfg.strCode +
+                                                    " de rut " + ConsoleView::formatMoney(lVndAmount) + " VND.");
+                            ConsoleView::pauseScreen();
+                            break;
+                        }
+
+                        long lVndEquivalent = lDeduct * cfg.lExchangeRateToVND;
+                        long lRemainder = lVndEquivalent - lVndAmount;
+
+                        std::cout << "\n  Thong tin quy doi:\n";
+                        std::cout << "    Tien mat nhan tai ATM : " << ConsoleView::formatMoney(lVndAmount) << " VND\n";
+                        std::cout << "    Ty gia quy doi        : 1 " << cfg.strCode << " = " << ConsoleView::formatMoney(cfg.lExchangeRateToVND) << " VND\n";
+                        std::cout << "    So tien se bi tru     : " << ConsoleView::formatMoney(lDeduct) << " " << cfg.strCode << "\n";
+                        std::cout << "    So du con lai uoc tinh: " << ConsoleView::formatMoney(acc.getBalance() - lDeduct) << " " << cfg.strCode << "\n";
+                        if (lRemainder > 0) {
+                            std::cout << "    Chenh lech lam tron   : " << ConsoleView::formatMoney(lRemainder) << " VND\n";
+                        }
+                        std::cout << "\n";
+
+                        if (!ConsoleView::confirmAction("Xac nhan thuc hien quy doi va rut tien?")) {
+                            ConsoleView::printInfo("Da huy giao dich quy doi.");
+                            ConsoleView::pauseScreen();
+                            break;
+                        }
+
+                        // Thuc hien tru tien va cap nhat file
+                        acc.setBalance(acc.getBalance() - lDeduct);
+                        if (!FileService::saveAccount(acc)) {
+                            acc.setBalance(acc.getBalance() + lDeduct); // Rollback
+                            ConsoleView::printError("Loi I/O he thong: Khong the cap nhat so du xuong dia! Giao dich da bi huy.");
+                            ConsoleView::pauseScreen();
+                            break;
+                        }
+
+                        std::string strTime = getNowTimestamp();
+                        std::string strDetail = "Quy doi nhan " + ConsoleView::formatMoney(lVndAmount) + " VND (Ty gia: 1 " + cfg.strCode + " = " + ConsoleView::formatMoney(cfg.lExchangeRateToVND) + " VND)";
+                        Transaction trans(acc.getId(), WITHDRAW, lDeduct, strTime, strDetail);
+                        FileService::appendTransaction(acc.getId(), trans);
+
+                        ConsoleView::printSuccess("Rut tien quy doi thanh cong! Vui long nhan " + ConsoleView::formatMoney(lVndAmount) + " VND tai khe tien.");
+                        std::cout << "\n  ==================================================\n";
+                        std::cout << "                 BIEN LAI GIAO DICH QUY DOI         \n";
+                        std::cout << "  ==================================================\n";
+                        std::cout << "  Ma tai khoan      : " << acc.getId() << "\n";
+                        std::cout << "  Giao dich         : RUT TIEN (QUY DOI NGOAI TE)\n";
+                        std::cout << "  Tien mat VND nhan : " << ConsoleView::formatMoney(lVndAmount) << " VND\n";
+                        std::cout << "  Ty gia ATM        : 1 " << cfg.strCode << " = " << ConsoleView::formatMoney(cfg.lExchangeRateToVND) << " VND\n";
+                        std::cout << "  So tien tru vao TK: " << ConsoleView::formatMoney(lDeduct) << " " << cfg.strCode << "\n";
+                        std::cout << "  So du con lai     : " << ConsoleView::formatMoney(acc.getBalance()) << " " << cfg.strCode << "\n";
+                        if (lRemainder > 0) {
+                            std::cout << "  Chenh lech lam tron: " << ConsoleView::formatMoney(lRemainder) << " VND\n";
+                        }
+                        std::cout << "  Thoi gian         : " << strTime << "\n";
+                        std::cout << "  ==================================================\n";
+                    }
                 }
                 ConsoleView::pauseScreen();
                 break;
             }
             case 3: {
                 ConsoleView::printHeader("GIAO DICH CHUYEN TIEN");
-                std::cout << "  So du hien tai: " << acc.getBalance() << " " << acc.getCurrency() << "\n\n";
+                std::cout << "  So du hien tai: " << ConsoleView::formatMoney(acc.getBalance()) << " " << acc.getCurrency() << "\n\n";
 
                 std::string strReceiverId = ConsoleView::inputLine("Nhap so tai khoan nguoi nhan (14 chu so): ");
                 if (!UserController::isValidIdFormat(strReceiverId)) {
@@ -453,7 +610,10 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                     break;
                 }
 
-                long lAmount = ConsoleView::inputMoney("Nhap so tien muon chuyen (0 = Huy): ");
+                CurrencyConfig cfgTransfer = getCurrencyConfig(acc.getCurrency());
+                std::string strPromptTransfer = "Nhap so tien muon chuyen [" + ConsoleView::formatMoney(cfgTransfer.lMinTransaction) + " - " + 
+                                                ConsoleView::formatMoney(cfgTransfer.lMaxBalance) + " " + cfgTransfer.strCode + "] (0 = Huy): ";
+                long lAmount = ConsoleView::inputMoneyRange(strPromptTransfer, cfgTransfer.lMinTransaction, cfgTransfer.lMaxBalance, cfgTransfer.strCode);
                 if (lAmount == 0) {
                     ConsoleView::printInfo("Da huy giao dich chuyen tien.");
                     ConsoleView::pauseScreen();
@@ -463,9 +623,9 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                 if (pReceiverMock != nullptr && pReceiverMock->getId() == strReceiverId) {
                     ErrorCode err = UserController::processTransfer(acc, *pReceiverMock, lAmount);
                     if (err == ERR_INVALID_AMOUNT) {
-                        ConsoleView::printError("So tien chuyen toi thieu phai tu 50,000 VND!");
+                        ConsoleView::printError("So tien chuyen toi thieu phai tu " + ConsoleView::formatMoney(cfgTransfer.lMinTransaction) + " " + cfgTransfer.strCode + "!");
                     } else if (err == ERR_NOT_MULTIPLE) {
-                        ConsoleView::printError("So tien chuyen phai la boi so cua 50,000 VND!");
+                        ConsoleView::printError("So tien chuyen phai la boi so cua " + ConsoleView::formatMoney(cfgTransfer.lMinTransaction) + " " + cfgTransfer.strCode + "!");
                     } else if (err == ERR_INSUFFICIENT_FUNDS) {
                         ConsoleView::printError("So du khong du de thuc hien giao dich chuyen tien!");
                     } else if (err == ERR_INVALID_FORMAT) {
@@ -489,7 +649,7 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                     std::cout << "\n  --------------------------------------------------\n";
                     std::cout << "  Tai khoan nguoi nhan : " << receiverAcc.getId() << "\n";
                     std::cout << "  Ten chu tai khoan    : " << receiverAcc.getName() << "\n";
-                    std::cout << "  So tien chuyen       : " << lAmount << " " << acc.getCurrency() << "\n";
+                    std::cout << "  So tien chuyen       : " << ConsoleView::formatMoney(lAmount) << " " << acc.getCurrency() << "\n";
                     std::cout << "  --------------------------------------------------\n";
                     bool bConfirm = ConsoleView::confirmAction("Xac nhan thuc hien giao dich chuyen tien tren?");
                     if (!bConfirm) {
@@ -506,19 +666,22 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                         break;
                     }
 
-                    // Dong bo so du nguoi gui tu dia neu co giao dich nhan tien ngoai luong dien ra song song
+                    // Dong bo so du nguoi gui tu dia chong Double-Spending va stale read
                     Account currentSenderOnDisk;
                     if (FileService::loadAccount(acc.getId(), currentSenderOnDisk) == ERR_NONE) {
-                        if (currentSenderOnDisk.getBalance() > acc.getBalance()) {
-                            acc.setBalance(currentSenderOnDisk.getBalance());
-                        }
+                        acc.setBalance(currentSenderOnDisk.getBalance());
+                    }
+                    if (acc.canWithdraw(lAmount) != ERR_NONE) {
+                        ConsoleView::printError("So du tai khoan tren he thong da thay doi! Khong du so du de thuc hien giao dich.");
+                        ConsoleView::pauseScreen();
+                        break;
                     }
 
                     ErrorCode err = UserController::processTransfer(acc, receiverAcc, lAmount);
                     if (err == ERR_INVALID_AMOUNT) {
-                        ConsoleView::printError("So tien chuyen toi thieu phai tu 50,000 VND!");
+                        ConsoleView::printError("So tien chuyen toi thieu phai tu " + ConsoleView::formatMoney(cfgTransfer.lMinTransaction) + " " + cfgTransfer.strCode + "!");
                     } else if (err == ERR_NOT_MULTIPLE) {
-                        ConsoleView::printError("So tien chuyen phai la boi so cua 50,000 VND!");
+                        ConsoleView::printError("So tien chuyen phai la boi so cua " + ConsoleView::formatMoney(cfgTransfer.lMinTransaction) + " " + cfgTransfer.strCode + "!");
                     } else if (err == ERR_INSUFFICIENT_FUNDS) {
                         ConsoleView::printError("So du khong du de thuc hien giao dich chuyen tien!");
                     } else if (err == ERR_INVALID_FORMAT) {
@@ -537,8 +700,13 @@ void UserController::runUserSession(Card& card, Account& acc, Account* pReceiver
                             // Rollback ca tren RAM va tren dia neu co loi I/O
                             acc.deposit(lAmount);
                             receiverAcc.withdraw(lAmount);
-                            FileService::saveAccount(acc);
-                            ConsoleView::printError("Loi I/O he thong khi cap nhat so du! Giao dich da duoc hoan tien an toan.");
+                            bool bRollbackSaved = FileService::saveAccount(acc);
+                            if (!bRollbackSaved) {
+                                FileService::appendAdminLog("CRITICAL_ERROR", "Rollback saveAccount for sender " + acc.getId() + " failed! Data desync on disk!");
+                                ConsoleView::printError("Canh bao khan cap: Loi I/O nghiem trong khi hoan tien xuong dia! Vui long lien he Admin.");
+                            } else {
+                                ConsoleView::printError("Loi I/O he thong khi cap nhat so du! Giao dich da duoc hoan tien an toan.");
+                            }
                         } else {
                             std::string strTime = getNowTimestamp();
                             // Ghi log giao dich nguoi gui

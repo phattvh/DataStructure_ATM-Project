@@ -53,9 +53,10 @@ std::string Transaction::getDetail() const {
 }
 
 std::string Transaction::formatForFile() const {
-    return this->_strTimestamp + "|" +
+    return this->_strId + "|" +
            std::to_string(static_cast<int>(this->_eType)) + "|" +
            std::to_string(this->_lAmount) + "|" +
+           this->_strTimestamp + "|" +
            this->_strDetail;
 }
 
@@ -63,7 +64,7 @@ std::string Transaction::toString() const {
     std::ostringstream oss;
     oss << "[" << this->_strTimestamp << "] "
         << std::left << std::setw(12) << this->getTypeName() << ": "
-        << std::right << std::setw(10) << this->_lAmount << " VND"
+        << std::right << std::setw(10) << this->_lAmount
         << " - " << this->_strDetail;
     return oss.str();
 }

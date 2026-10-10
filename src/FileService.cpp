@@ -1,16 +1,55 @@
 #include "FileService.h"
+#include "SecurityService.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <filesystem>
 #include <cstdio>
+#include <vector>
 
 #ifdef _WIN32
 #include <process.h>
 #define GET_CURRENT_PID() _getpid()
+
+class FileLockGuard {
+public:
+    FileLockGuard(const std::string&) {}
+    bool isLocked() const { return true; }
+};
 #else
 #include <unistd.h>
+#include <sys/file.h>
+#include <fcntl.h>
 #define GET_CURRENT_PID() getpid()
+
+class FileLockGuard {
+private:
+    int _fd;
+    bool _bLocked;
+
+public:
+    FileLockGuard(const std::string& strLockPath) : _fd(-1), _bLocked(false) {
+        _fd = open(strLockPath.c_str(), O_RDWR | O_CREAT, 0666);
+        if (_fd >= 0) {
+            if (flock(_fd, LOCK_EX) == 0) {
+                _bLocked = true;
+            }
+        }
+    }
+
+    ~FileLockGuard() {
+        if (_fd >= 0) {
+            if (_bLocked) {
+                flock(_fd, LOCK_UN);
+            }
+            close(_fd);
+        }
+    }
+
+    bool isLocked() const {
+        return this->_bLocked;
+    }
+};
 #endif
 
 namespace fs = std::filesystem;
@@ -38,6 +77,7 @@ static std::string trimString(const std::string& str) {
 //Ham noi bo: Ghi file nguyen tu (Atomic Write) qua file tam + tien to PID
 static bool atomicWriteFile(const std::string& strPath, const std::string& strContent) {
     ensureDataDirExists();
+    FileLockGuard lock(DATA_DIR + ".atm_data.lock");
     std::string strSuffix = "." + std::to_string(GET_CURRENT_PID());
     std::string strTempPath = strPath + strSuffix + ".tmp";
     std::ofstream fout(strTempPath, std::ios::trunc);
@@ -57,28 +97,31 @@ static bool atomicWriteFile(const std::string& strPath, const std::string& strCo
 
     std::error_code ec;
     fs::rename(strTempPath, strPath, ec);
+    if (!ec) {
+        return true;
+    }
+
+    // Neu rename that bai (vi du tren he dieu hanh khoa tap tin dich)
+    std::string strBakPath = strPath + strSuffix + ".bak";
+    std::error_code ecBak;
+    if (fs::exists(strPath)) {
+        fs::copy_file(strPath, strBakPath, fs::copy_options::overwrite_existing, ecBak);
+    }
+
+    fs::rename(strTempPath, strPath, ec);
     if (ec) {
-        std::string strBakPath = strPath + strSuffix + ".bak";
-        std::error_code ecBak;
-        if (fs::exists(strPath)) {
-            fs::rename(strPath, strBakPath, ecBak);
-        }
-
-        fs::rename(strTempPath, strPath, ec);
-        if (ec) {
-            if (!ecBak && fs::exists(strBakPath)) {
-                std::error_code ecRestore;
-                fs::rename(strBakPath, strPath, ecRestore);
-            }
-            std::error_code ecCleanTmp;
-            fs::remove(strTempPath, ecCleanTmp);
-            return false;
-        }
-
         if (!ecBak && fs::exists(strBakPath)) {
-            std::error_code ecDelBak;
-            fs::remove(strBakPath, ecDelBak);
+            std::error_code ecRestore;
+            fs::copy_file(strBakPath, strPath, fs::copy_options::overwrite_existing, ecRestore);
         }
+        std::error_code ecCleanTmp;
+        fs::remove(strTempPath, ecCleanTmp);
+        return false;
+    }
+
+    if (!ecBak && fs::exists(strBakPath)) {
+        std::error_code ecDelBak;
+        fs::remove(strBakPath, ecDelBak);
     }
     return true;
 }
@@ -96,10 +139,13 @@ bool FileService::loadAdmins(LinkedList<Admin>& listAdmins) {
         strLine = trimString(strLine);
         if (strLine.empty()) continue;
 
-        std::istringstream iss(strLine);
-        std::string strUser, strPass;
-        if (iss >> strUser >> strPass) {
-            listAdmins.addTail(Admin(strUser, strPass));
+        size_t iSpace = strLine.find(' ');
+        if (iSpace != std::string::npos) {
+            std::string strUser = trimString(strLine.substr(0, iSpace));
+            std::string strPass = trimString(strLine.substr(iSpace + 1));
+            if (!strUser.empty() && !strPass.empty()) {
+                listAdmins.addTail(Admin(strUser, strPass));
+            }
         }
     }
 
@@ -160,7 +206,13 @@ bool FileService::loadCards(LinkedList<Card>& listCards,
                 bIsLocked = true;
             }
 
-            listCards.addTail(Card(strId, strPin, bIsLocked));
+            int iFailed = getFailedAttempts(strId);
+            Card card(strId, strPin, bIsLocked);
+            if (iFailed > 0) {
+                card.setFailedAttempts(iFailed);
+            }
+
+            listCards.addTail(card);
         }
     }
 
@@ -318,6 +370,7 @@ bool FileService::createAccountFiles(const std::string& strId,
     // Khoi tao file LichSu moi trang tinh
     std::ofstream foutHist(strHistoryPath, std::ios::trunc);
     if (!foutHist.is_open()) {
+        deleteAccountFile(strId);
         return false;
     }
     foutHist.close();
@@ -334,6 +387,10 @@ bool FileService::appendTransaction(const std::string& strId, const Transaction&
     }
 
     fout << trans.formatForFile() << "\n";
+    if (fout.fail()) {
+        fout.close();
+        return false;
+    }
     fout.close();
     return true;
 }
@@ -362,14 +419,17 @@ bool FileService::loadTransactions(const std::string& strId, LinkedList<Transact
 void FileService::initSampleData() {
     ensureDataDirExists();
 
-    // 1. Khoi tao Admin.txt neu chua co
+    std::string strMarkerPath = DATA_DIR + ".system_initialized";
+    bool bInitialized = fs::exists(strMarkerPath);
+
+    // 1. Khoi tao Admin.txt neu he thong chua tung khoi tao
     std::string strAdminPath = DATA_DIR + "Admin.txt";
-    if (!fs::exists(strAdminPath) || fs::file_size(strAdminPath) == 0) {
+    if (!bInitialized && (!fs::exists(strAdminPath) || fs::file_size(strAdminPath) == 0)) {
         std::ofstream fout(strAdminPath);
         if (fout.is_open()) {
-            fout << "admin1 123456\n";
-            fout << "admin2 123456\n";
-            fout << "superadmin 888888\n";
+            fout << "admin1 " << SecurityService::hashPassword("123456") << "\n";
+            fout << "admin2 " << SecurityService::hashPassword("123456") << "\n";
+            fout << "superadmin " << SecurityService::hashPassword("888888") << "\n";
             fout.close();
         }
     }
@@ -384,9 +444,8 @@ void FileService::initSampleData() {
     }
 
     // 3. Khoi tao TheTu.txt va cac file [ID].txt neu he thong chua tung duoc khoi tao + marker .system_initialized 
-    std::string strMarkerPath = DATA_DIR + ".system_initialized";
     std::string strTheTuPath = DATA_DIR + "TheTu.txt";
-    if (!fs::exists(strMarkerPath)) {
+    if (!bInitialized) {
         if (!fs::exists(strTheTuPath) || fs::file_size(strTheTuPath) == 0) {
             struct SampleCard {
                 const char* szId;
@@ -446,6 +505,130 @@ bool FileService::appendAdminLog(const std::string& strAction, const std::string
         return false;
     }
     outFile << getNowTimestamp() << "|" << sanitizeLogField(strAction) << "|" << sanitizeLogField(strDetail) << "\n";
+    if (outFile.fail()) {
+        outFile.close();
+        return false;
+    }
     outFile.close();
     return true;
 }
+
+bool FileService::archiveHistoryFile(const std::string& strId) {
+    ensureDataDirExists();
+    std::string strHistoryPath = DATA_DIR + "LichSu" + strId + ".txt";
+    if (fs::exists(strHistoryPath) && fs::file_size(strHistoryPath) > 0) {
+        std::string strArchive = DATA_DIR + "Archive_LichSu" + strId + "_" + std::to_string(std::time(nullptr)) + ".bak";
+        std::error_code ec;
+        fs::rename(strHistoryPath, strArchive, ec);
+        return !ec;
+    }
+    return true;
+}
+
+int FileService::getFailedAttempts(const std::string& strId) {
+    ensureDataDirExists();
+    std::string strPath = DATA_DIR + "FailedAttempts.txt";
+    std::ifstream fin(strPath);
+    if (!fin.is_open()) {
+        return 0;
+    }
+    std::string strLine;
+    while (std::getline(fin, strLine)) {
+        strLine = trimString(strLine);
+        if (strLine.empty()) continue;
+        std::istringstream iss(strLine);
+        std::string strCurrentId;
+        int iCount = 0;
+        if (iss >> strCurrentId >> iCount) {
+            if (strCurrentId == strId) {
+                fin.close();
+                return iCount;
+            }
+        }
+    }
+    fin.close();
+    return 0;
+}
+
+int FileService::recordFailedAttempt(const std::string& strId) {
+    ensureDataDirExists();
+    std::string strPath = DATA_DIR + "FailedAttempts.txt";
+    std::ifstream fin(strPath);
+    std::vector<std::pair<std::string, int>> entries;
+    bool bFound = false;
+    int iNewCount = 1;
+
+    if (fin.is_open()) {
+        std::string strLine;
+        while (std::getline(fin, strLine)) {
+            strLine = trimString(strLine);
+            if (strLine.empty()) continue;
+            std::istringstream iss(strLine);
+            std::string strCurrentId;
+            int iCount = 0;
+            if (iss >> strCurrentId >> iCount) {
+                if (strCurrentId == strId) {
+                    iCount++;
+                    iNewCount = iCount;
+                    bFound = true;
+                }
+                entries.push_back({strCurrentId, iCount});
+            }
+        }
+        fin.close();
+    }
+
+    if (!bFound) {
+        entries.push_back({strId, 1});
+        iNewCount = 1;
+    }
+
+    std::ostringstream oss;
+    for (const auto& item : entries) {
+        oss << item.first << " " << item.second << "\n";
+    }
+    atomicWriteFile(strPath, oss.str());
+
+    if (iNewCount >= MAX_FAILED_LOGINS) {
+        appendLockedCard(strId);
+    }
+    return iNewCount;
+}
+
+bool FileService::resetFailedAttempts(const std::string& strId) {
+    ensureDataDirExists();
+    std::string strPath = DATA_DIR + "FailedAttempts.txt";
+    std::ifstream fin(strPath);
+    if (!fin.is_open()) {
+        return true;
+    }
+
+    std::vector<std::pair<std::string, int>> entries;
+    std::string strLine;
+    bool bChanged = false;
+    while (std::getline(fin, strLine)) {
+        strLine = trimString(strLine);
+        if (strLine.empty()) continue;
+        std::istringstream iss(strLine);
+        std::string strCurrentId;
+        int iCount = 0;
+        if (iss >> strCurrentId >> iCount) {
+            if (strCurrentId == strId) {
+                bChanged = true;
+            } else {
+                entries.push_back({strCurrentId, iCount});
+            }
+        }
+    }
+    fin.close();
+
+    if (bChanged) {
+        std::ostringstream oss;
+        for (const auto& item : entries) {
+            oss << item.first << " " << item.second << "\n";
+        }
+        return atomicWriteFile(strPath, oss.str());
+    }
+    return true;
+}
+

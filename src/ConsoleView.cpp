@@ -215,6 +215,24 @@ std::string ConsoleView::inputPin(const std::string& strPrompt) {
     return ConsoleView::inputPassword(strPrompt);
 }
 
+std::string ConsoleView::formatMoney(long lAmount) {
+    std::string strNum = std::to_string(lAmount);
+    std::string strFormatted = "";
+    int iCount = 0;
+    int iStart = (lAmount < 0) ? 1 : 0;
+    for (int i = static_cast<int>(strNum.length()) - 1; i >= iStart; --i) {
+        strFormatted = strNum[i] + strFormatted;
+        iCount++;
+        if (iCount % 3 == 0 && i > iStart) {
+            strFormatted = "," + strFormatted;
+        }
+    }
+    if (lAmount < 0) {
+        strFormatted = "-" + strFormatted;
+    }
+    return strFormatted;
+}
+
 long ConsoleView::inputMoney(const std::string& strPrompt, std::istream& inStream) {
     while (true) {
         std::cout << strPrompt << std::flush;
@@ -250,7 +268,62 @@ long ConsoleView::inputMoney(const std::string& strPrompt, std::istream& inStrea
             long lAmount = std::stol(strTrimmed);
             return lAmount;
         } catch (const std::out_of_range&) {
-            ConsoleView::printError("So tien vuot qua gioi han he thong co the xu ly. Vui long nhap lai!");
+            ConsoleView::printError("So tien vuot qua gioi han he thong co the xu ly (Toi da: " +
+                                    formatMoney(MAX_BALANCE_DEFAULT) + " VND). Vui long nhap lai!");
+        } catch (...) {
+            ConsoleView::printError("Loi chuyen doi du lieu so. Vui long nhap lai!");
+        }
+    }
+}
+
+long ConsoleView::inputMoneyRange(const std::string& strPrompt,
+                                  long lMin,
+                                  long lMax,
+                                  const std::string& strCurrency,
+                                  std::istream& inStream) {
+    while (true) {
+        std::cout << strPrompt << std::flush;
+        std::string strLine;
+        if (!std::getline(inStream, strLine)) {
+            ConsoleView::printWarning("Luong nhap lieu da ket thuc (EOF).");
+            return 0;
+        }
+
+        size_t iStart = strLine.find_first_not_of(" \t\r\n");
+        if (iStart == std::string::npos) {
+            ConsoleView::printError("So tien khong duoc de trong. Vui long nhap lai!");
+            continue;
+        }
+        size_t iEnd = strLine.find_last_not_of(" \t\r\n");
+        std::string strTrimmed = strLine.substr(iStart, iEnd - iStart + 1);
+
+        bool bAllDigits = true;
+        for (char c : strTrimmed) {
+            if (!std::isdigit(static_cast<unsigned char>(c))) {
+                bAllDigits = false;
+                break;
+            }
+        }
+
+        if (!bAllDigits) {
+            ConsoleView::printError("Dinh dang khong hop le (chi chap nhan so nguyen duong). Vui long nhap lai!");
+            continue;
+        }
+
+        try {
+            long lAmount = std::stol(strTrimmed);
+            if (lAmount == 0) {
+                return 0; // Cho phep nhap 0 de thoat/huy
+            }
+            if (lAmount < lMin || lAmount > lMax) {
+                ConsoleView::printError("So tien vuot ngoai khoang cho phep! Gioi han: Tu " +
+                                        formatMoney(lMin) + " den " + formatMoney(lMax) + " " + strCurrency + ". Vui long nhap lai!");
+                continue;
+            }
+            return lAmount;
+        } catch (const std::out_of_range&) {
+            ConsoleView::printError("So tien qua lon vuot qua gioi han he thong! Khoang cho phep: Tu " +
+                                    formatMoney(lMin) + " den " + formatMoney(lMax) + " " + strCurrency + ". Vui long nhap lai!");
         } catch (...) {
             ConsoleView::printError("Loi chuyen doi du lieu so. Vui long nhap lai!");
         }

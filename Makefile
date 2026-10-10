@@ -14,7 +14,8 @@ SRCS = $(SRC_DIR)/ConsoleView.cpp \
        $(SRC_DIR)/Transaction.cpp \
        $(SRC_DIR)/FileService.cpp \
        $(SRC_DIR)/AtmController.cpp \
-       $(SRC_DIR)/AdminController.cpp
+       $(SRC_DIR)/AdminController.cpp \
+       $(SRC_DIR)/SecurityService.cpp
 
 OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
 
@@ -63,7 +64,7 @@ app: $(OBJS) $(APP_SRC) | $(BUILD_DIR)
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp $(wildcard $(INC_DIR)/*.h) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 test: test_c test_a test_ac test_runner test_phase_2 test_phase_2_a test_phase_2_c test_phase_3 test_phase_3_a test_mem

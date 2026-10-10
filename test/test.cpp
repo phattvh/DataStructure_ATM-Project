@@ -31,6 +31,12 @@
 #include "Account.h"
 #include "ConsoleView.h"
 #include "UserController.h"
+#include "Admin.h"
+#include "Transaction.h"
+#include "FileService.h"
+#include "SecurityService.h"
+#include <fstream>
+#include <filesystem>
 
 // Biến toàn cục ghi nhận thống kê
 static int g_nTotalTests = 0;
@@ -382,6 +388,151 @@ void testSuiteMemoryAndInvariants() {
 }
 
 /******************************************************************************
+ * NHÓM 7: KIỂM THỬ TÍNH NĂNG MỚI (MD5 HASHING, ĐA TIỀN TỆ, GIỚI HẠN SỐ DƯ)
+ ******************************************************************************/
+void testSuiteNewFeatures() {
+    std::cout << "\n======================================================\n";
+    std::cout << " [TEST SUITE 7] NEW FEATURES: MD5, MULTI-CURRENCY, LIMITS\n";
+    std::cout << "======================================================\n";
+
+    // 1. Kiểm thử thuật toán băm MD5
+    std::string strMd5Expected = "e10adc3949ba59abbe56e057f20f883e"; // MD5("123456")
+    ASSERT_EQUAL(SecurityService::md5("123456"), strMd5Expected, "MD5('123456') tinh toan chinh xac theo RFC 1321");
+
+    // 2. Kiểm thử xác thực đa tầng verifyHash
+    ASSERT_TRUE(SecurityService::verifyHash("123456", "123456"), "verifyHash khop voi plaintext");
+    ASSERT_TRUE(SecurityService::verifyHash("123456", strMd5Expected), "verifyHash khop voi MD5 raw");
+    ASSERT_TRUE(SecurityService::verifyHash("123456", SecurityService::hashPin("123456")), "verifyHash khop voi salted PIN hash");
+    ASSERT_FALSE(SecurityService::verifyHash("654321", SecurityService::hashPin("123456")), "verifyHash chan chuoi sai");
+    ASSERT_TRUE(SecurityService::verifyHash("admin123", SecurityService::hashPassword("admin123")), "verifyHash khop voi salted Admin pass hash");
+
+    // 3. Kiểm thử Card & Admin xác thực với mã băm
+    Card cardHashed("10014504500099", SecurityService::hashPin("123456"));
+    ASSERT_TRUE(cardHashed.checkPin("123456"), "Card voi PIN da bam xac thuc thanh cong");
+    ASSERT_FALSE(cardHashed.checkPin("654321"), "Card voi PIN da bam chan PIN sai");
+
+    Admin adminHashed("superadmin", SecurityService::hashPassword("SecureAdminPass2026"));
+    ASSERT_TRUE(adminHashed.verifyPassword("SecureAdminPass2026"), "Admin voi pass da bam xac thuc thanh cong");
+    ASSERT_FALSE(adminHashed.verifyPassword("WrongPass"), "Admin voi pass da bam chan pass sai");
+
+    // 4. Kiểm thử Cấu hình đa tiền tệ (CurrencyConfig)
+    CurrencyConfig cfgVnd = getCurrencyConfig("VND");
+    CurrencyConfig cfgUsd = getCurrencyConfig("USD");
+    CurrencyConfig cfgEur = getCurrencyConfig("EUR");
+    CurrencyConfig cfgEuro = getCurrencyConfig("EURO");
+    CurrencyConfig cfgJpy = getCurrencyConfig("JPY");
+    CurrencyConfig cfgGbp = getCurrencyConfig("GBP");
+
+    ASSERT_EQUAL(cfgVnd.lMinTransaction, 50000L, "VND min transaction la 50,000");
+    ASSERT_EQUAL(cfgUsd.lMinTransaction, 10L, "USD min transaction la 10");
+    ASSERT_EQUAL(cfgEur.lMinTransaction, 10L, "EUR min transaction la 10");
+    ASSERT_EQUAL(cfgEuro.strCode, std::string("EUR"), "EURO anh xa dung ma EUR");
+    ASSERT_EQUAL(cfgJpy.lMinTransaction, 1000L, "JPY min transaction la 1,000");
+    ASSERT_EQUAL(cfgGbp.lMinTransaction, 10L, "GBP min transaction la 10");
+    ASSERT_TRUE(cfgEur.lExchangeRateToVND > 20000L, "Ty gia EUR sang VND hop le");
+
+    // 5. Kiểm thử nghiệp vụ tài khoản EUR
+    Account accEur("10014504500088", "EURO HOLDER", 1000, "EUR");
+    ASSERT_EQUAL(accEur.canWithdraw(5), ERR_INVALID_AMOUNT, "EUR chan rut duoi 10 EUR");
+    ASSERT_EQUAL(accEur.canWithdraw(15), ERR_NOT_MULTIPLE, "EUR chan rut khong phai boi so 10 EUR");
+    ASSERT_EQUAL(accEur.canWithdraw(100), ERR_NONE, "EUR cho phep rut 100 EUR");
+    ASSERT_EQUAL(accEur.canWithdraw(1000), ERR_INSUFFICIENT_FUNDS, "EUR chan rut vi pham 10 EUR du phong");
+
+    // 6. Kiểm thử formatMoney
+    ASSERT_EQUAL(ConsoleView::formatMoney(50000L), std::string("50,000"), "formatMoney(50000) -> 50,000");
+    ASSERT_EQUAL(ConsoleView::formatMoney(10000000000L), std::string("10,000,000,000"), "formatMoney(10B) -> 10,000,000,000");
+
+    // 7. Kiểm thử inputMoneyRange với stream
+    std::istringstream streamOutOfRange("999999999999999999999\n5\n150000\n");
+    long lTested = ConsoleView::inputMoneyRange("Nhap: ", 50000, 500000, "VND", streamOutOfRange);
+    ASSERT_EQUAL(lTested, 150000L, "inputMoneyRange bo qua so qua lon va so duoi min, lay dung so trong range");
+}
+
+/******************************************************************************
+ * NHÓM 8: KIỂM THỬ KHẮC PHỤC LỖ HỔNG ADVERSARIAL (SECURITY & ROBUSTNESS)
+ ******************************************************************************/
+void testSuiteAdversarialHardening() {
+    std::cout << "\n======================================================\n";
+    std::cout << " [TEST SUITE 8] ADVERSARIAL HARDENING & ROBUSTNESS\n";
+    std::cout << "======================================================\n";
+
+    // 1. Chặn Bypass mã Hash trực tiếp (Hash-pass-through exploit)
+    std::string strPinHash = SecurityService::hashPin("654321");
+    ASSERT_TRUE(!SecurityService::verifyHash(strPinHash, strPinHash), "verifyHash chan nhap truc tiep chuoi hash 32 hex");
+    ASSERT_TRUE(SecurityService::verifyHash("654321", strPinHash), "verifyHash xac thuc dung PIN goc");
+
+    // 2. Chặn Bypass mật khẩu Admin trực tiếp bằng hash
+    std::string strAdminPassHash = SecurityService::hashPassword("admin@2026");
+    ASSERT_TRUE(!SecurityService::verifyHash(strAdminPassHash, strAdminPassHash), "verifyHash chan nhap truc tiep hash pass admin");
+    ASSERT_TRUE(SecurityService::verifyHash("admin@2026", strAdminPassHash), "verifyHash xac thuc dung mat khau admin goc");
+
+    // 3. Chuẩn hóa định dạng Transaction 5 trường (Spec compliance)
+    Transaction tx("10014504500001", WITHDRAW, 200000L, "2026-10-10 20:00:00", "Rut tien mat tai ATM");
+    ASSERT_EQUAL(tx.formatForFile(), std::string("10014504500001|1|200000|2026-10-10 20:00:00|Rut tien mat tai ATM"), "formatForFile xuat dung 5 truong phan cach bang dau '|'");
+
+    // 4. Khả năng khôi phục ngược (Round-trip) của Transaction
+    Transaction txParsed = Transaction::parseFromFileLine("10014504500001", tx.formatForFile());
+    ASSERT_EQUAL(txParsed.getId(), std::string("10014504500001"), "Roundtrip parse dung ID");
+    ASSERT_EQUAL(txParsed.getAmount(), 200000L, "Roundtrip parse dung so tien");
+    ASSERT_EQUAL(txParsed.getDetail(), std::string("Rut tien mat tai ATM"), "Roundtrip parse dung chi tiet");
+
+    // 5. Tính co giãn & bảo vệ tỷ giá ngoại tệ động (Dynamic Currency Resilience)
+    CurrencyConfig cfgUnknown = getCurrencyConfig("SGD");
+    ASSERT_EQUAL(cfgUnknown.strCode, std::string("SGD"), "getCurrencyConfig giu nguyen ma ngoai te SGD");
+    ASSERT_EQUAL(cfgUnknown.lMinTransaction, 10L, "SGD co min transaction 10 don vi");
+    ASSERT_EQUAL(cfgUnknown.lMinReserve, 10L, "SGD co min reserve 10 don vi");
+    ASSERT_EQUAL(cfgUnknown.lMaxBalance, 1000000L, "SGD co max balance 1,000,000 don vi");
+    ASSERT_TRUE(cfgUnknown.lExchangeRateToVND > 0, "Ty gia SGD hop le (> 0) tranh loi chia cho 0");
+
+    // 6. Kiểm tra Admin Password chứa khoảng trắng
+    const std::string strTestAdminFile = "data/Admin_Test_Adversarial.txt";
+    std::ofstream fAdminTest(strTestAdminFile);
+    if (fAdminTest.is_open()) {
+        fAdminTest << "admin_space my secret admin password with spaces\n";
+        fAdminTest.close();
+
+        std::ifstream fIn(strTestAdminFile);
+        std::string strLine;
+        if (std::getline(fIn, strLine)) {
+            size_t nFirstSpace = strLine.find(' ');
+            ASSERT_TRUE(nFirstSpace != std::string::npos, "Tim thay dau cach phan tach user va pass");
+            std::string strUser = strLine.substr(0, nFirstSpace);
+            std::string strPass = strLine.substr(nFirstSpace + 1);
+            ASSERT_EQUAL(strUser, std::string("admin_space"), "Doc dung user admin");
+            ASSERT_EQUAL(strPass, std::string("my secret admin password with spaces"), "Doc dung password chua nhieu dau cach");
+        }
+        fIn.close();
+        std::remove(strTestAdminFile.c_str());
+    }
+
+    // 7. Kiểm thử lưu trữ số lần đăng nhập sai bền vững (Failed Attempts Persistence)
+    const std::string strTestCardId = "10014504509988";
+    FileService::resetFailedAttempts(strTestCardId);
+    ASSERT_EQUAL(FileService::getFailedAttempts(strTestCardId), 0, "So lan sai ban dau la 0");
+    FileService::recordFailedAttempt(strTestCardId);
+    ASSERT_EQUAL(FileService::getFailedAttempts(strTestCardId), 1, "Ghi nhan sai 1 lan thanh cong tren dia");
+    FileService::recordFailedAttempt(strTestCardId);
+    ASSERT_EQUAL(FileService::getFailedAttempts(strTestCardId), 2, "Ghi nhan sai 2 lan thanh cong tren dia");
+    FileService::resetFailedAttempts(strTestCardId);
+    ASSERT_EQUAL(FileService::getFailedAttempts(strTestCardId), 0, "Reset so lan sai thanh cong ve 0");
+
+    // 8. Kiểm thử lưu trữ an toàn tệp lịch sử khi xóa thẻ (History File Archival)
+    const std::string strTestArchiveId = "10014504509977";
+    std::string strHistFile = "data/LichSu" + strTestArchiveId + ".txt";
+    std::ofstream fHist(strHistFile);
+    fHist << "Test Transaction Record\n";
+    fHist.close();
+    bool bArchived = FileService::archiveHistoryFile(strTestArchiveId);
+    ASSERT_TRUE(bArchived, "archiveHistoryFile thanh cong");
+    ASSERT_TRUE(!std::filesystem::exists(strHistFile), "File lich su cu khong con trong thu muc active");
+    for (const auto& entry : std::filesystem::directory_iterator("data/")) {
+        if (entry.path().string().find("Archive_LichSu" + strTestArchiveId) != std::string::npos) {
+            std::filesystem::remove(entry.path());
+        }
+    }
+}
+
+/******************************************************************************
  * HÀM CHÍNH (TEST RUNNER ENTRY POINT)
  ******************************************************************************/
 int main() {
@@ -393,13 +544,15 @@ int main() {
     std::cout << "#      Thuc hien boi: Thanh vien B (QA / Code Reviewer)      #\n";
     std::cout << "##############################################################\n";
 
-    // Thực thi 6 bộ kiểm thử
+    // Thực thi 8 bộ kiểm thử
     testSuiteCardModel();
     testSuiteAccountModel();
     testSuiteConsoleViewIO();
     testSuiteUserController();
     testSuiteStressPerformance();
     testSuiteMemoryAndInvariants();
+    testSuiteNewFeatures();
+    testSuiteAdversarialHardening();
 
     auto tTotalEnd = std::chrono::high_resolution_clock::now();
     double dTotalTimeMs = std::chrono::duration<double, std::milli>(tTotalEnd - tTotalStart).count();

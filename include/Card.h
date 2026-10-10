@@ -115,6 +115,12 @@ public:
     int getFailedAttempts() const;
 
     /**********************************************************
+     * @Description Setter cap nhat so lan dang nhap sai
+     * @param iAttempts So lan sai
+     **********************************************************/
+    void setFailedAttempts(int iAttempts);
+
+    /**********************************************************
      * @Description Ham tien ich tinh kiem tra dinh dang ma PIN
      * @param strPin Ma PIN can kiem tra
      * @return true neu dung 6 chu so

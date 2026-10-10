@@ -73,18 +73,22 @@ void AdminController::viewCardList() const {
         });
         if (pLock != nullptr) bIsLocked = true;
 
-        std::string strStatus;
+        std::string strLabel;
+        std::string strColor;
         if (bIsLocked) {
-            strStatus = "\033[31mBi Khoa\033[0m";
+            strLabel = "Bi Khoa";
+            strColor = "\033[31m";
         } else if (card.isDefaultPin()) {
-            strStatus = "\033[33mChua doi PIN\033[0m";
+            strLabel = "Chua doi PIN";
+            strColor = "\033[33m";
         } else {
-            strStatus = "\033[32mHoat dong\033[0m";
+            strLabel = "Hoat dong";
+            strColor = "\033[32m";
         }
 
         std::cout << "| " << std::left << std::setw(4) << iIndex++
                   << "| " << std::setw(15) << strId
-                  << "| " << strStatus << "\n";
+                  << "| " << strColor << std::left << std::setw(19) << strLabel << "\033[0m|\n";
 
         pCur = pCur->_pNext;
     }
@@ -143,6 +147,10 @@ void AdminController::addNewCard() {
             ConsoleView::printError("Ho ten khong duoc de trong!");
             continue;
         }
+        if (strName.length() < 2 || strName.length() > 50) {
+            ConsoleView::printError("Ho ten phai co do dai tu 2 den 50 ky tu!");
+            continue;
+        }
         bool bHasInvalidChar = false;
         for (unsigned char c : strName) {
             if (c < 32 || c == 127 || c == '|' || c == 27) {
@@ -157,45 +165,68 @@ void AdminController::addNewCard() {
         break;
     }
 
-    // Nhap so du ban dau (toi thieu 50k va la boi so cua 50k)
+    // 1. Chon don vi tien te
+    std::string strCurrency = "VND";
+    std::cout << "\n  Cac loai tien te ho tro:\n";
+    std::cout << "    1. VND  (Vietnamese Dong)\n";
+    std::cout << "    2. USD  (US Dollar)\n";
+    std::cout << "    3. EUR  (Euro)\n";
+    std::cout << "    4. JPY  (Japanese Yen)\n";
+    std::cout << "    5. GBP  (British Pound)\n";
+    std::cout << "    0. Nhap ma tuy chinh\n";
+    std::string strCurrChoice = ConsoleView::inputLine("  Chon loai tien te (1-5, Enter mac dinh VND): ");
+    if (strCurrChoice == "2" || strCurrChoice == "USD" || strCurrChoice == "usd") {
+        strCurrency = "USD";
+    } else if (strCurrChoice == "3" || strCurrChoice == "EUR" || strCurrChoice == "eur" || strCurrChoice == "EURO" || strCurrChoice == "euro") {
+        strCurrency = "EUR";
+    } else if (strCurrChoice == "4" || strCurrChoice == "JPY" || strCurrChoice == "jpy") {
+        strCurrency = "JPY";
+    } else if (strCurrChoice == "5" || strCurrChoice == "GBP" || strCurrChoice == "gbp") {
+        strCurrency = "GBP";
+    } else if (strCurrChoice == "0") {
+        while (true) {
+            std::string strCustom = ConsoleView::inputLine("  Nhap ma tien te (3-5 ky tu viet hoa, vi du: CAD, AUD, 0 de huy): ");
+            if (std::cin.eof() || strCustom.empty() || strCustom == "0") {
+                ConsoleView::printInfo("Da huy chon ma tien te tuy chinh, ap dung mac dinh VND.");
+                strCurrency = "VND";
+                break;
+            }
+            bool bValid = (strCustom.length() >= 3 && strCustom.length() <= 5);
+            for (char c : strCustom) {
+                if (!std::isupper(static_cast<unsigned char>(c))) {
+                    bValid = false;
+                    break;
+                }
+            }
+            if (bValid) {
+                strCurrency = strCustom;
+                break;
+            }
+            ConsoleView::printError("Ma tien te khong hop le (chi chap nhan 3-5 ky tu chu hoa)!");
+        }
+    } else {
+        strCurrency = "VND";
+    }
+
+    CurrencyConfig cfg = getCurrencyConfig(strCurrency);
+
+    // 2. Nhap so du ban dau voi khoang gioi han ro rang
     long lBalance = 0;
     while (true) {
-        lBalance = ConsoleView::inputMoney("Nhap so du ban dau (toi thieu 50,000 VND, boi so 50k, 0 de huy): ");
+        std::string strPrompt = "Nhap so du ban dau [" + ConsoleView::formatMoney(cfg.lMinReserve) + " - " + 
+                                ConsoleView::formatMoney(cfg.lMaxBalance) + " " + cfg.strCode + 
+                                "] (boi so cua " + ConsoleView::formatMoney(cfg.lMinTransaction) + ", 0 de huy): ";
+        lBalance = ConsoleView::inputMoneyRange(strPrompt, cfg.lMinReserve, cfg.lMaxBalance, cfg.strCode);
         if (lBalance == 0) {
             ConsoleView::printInfo("Da huy thao tac them the moi.");
             ConsoleView::pauseScreen();
             return;
         }
-        if (lBalance < MIN_BALANCE_RESERVE) {
-            ConsoleView::printError("So du ban dau phai tu " +
-                                    std::to_string(MIN_BALANCE_RESERVE) + " VND tro len!");
-            continue;
-        }
-        if (lBalance % MIN_TRANSACTION != 0) {
+        if (lBalance % cfg.lMinTransaction != 0) {
             ConsoleView::printError("So du ban dau phai la boi so cua " +
-                                    std::to_string(MIN_TRANSACTION) + " VND!");
-            continue;
-        }
-        break;
-    }
-
-    // Nhap loai tien te 
-    std::string strCurrency;
-    while (true) {
-        strCurrency = ConsoleView::inputLine("Don vi tien te (Enter de chon VND): ");
-        if (strCurrency.empty()) {
-            strCurrency = "VND";
-            break;
-        }
-        bool bValidCurr = (strCurrency.length() >= 3 && strCurrency.length() <= 5);
-        for (char c : strCurrency) {
-            if (!std::isupper(static_cast<unsigned char>(c))) {
-                bValidCurr = false;
-                break;
-            }
-        }
-        if (!bValidCurr) {
-            ConsoleView::printError("Don vi tien te khong hop le (chi chap nhan 3-5 chu cai viet hoa, vi du: VND, USD)!");
+                                    ConsoleView::formatMoney(cfg.lMinTransaction) + " " + cfg.strCode + "! " +
+                                    "(Khoang cho phep: " + ConsoleView::formatMoney(cfg.lMinReserve) + " den " + 
+                                    ConsoleView::formatMoney(cfg.lMaxBalance) + " " + cfg.strCode + ")");
             continue;
         }
         break;
@@ -205,7 +236,7 @@ void AdminController::addNewCard() {
     std::cout << "\n  Thong tin the moi:\n";
     std::cout << "    Ma the  : " << strNewId     << "\n";
     std::cout << "    Ho ten  : " << strName      << "\n";
-    std::cout << "    So du   : " << lBalance     << " " << strCurrency << "\n";
+    std::cout << "    So du   : " << ConsoleView::formatMoney(lBalance) << " " << strCurrency << "\n";
     std::cout << "    Ma PIN  : " << DEFAULT_PIN  << " (mac dinh - yeu cau doi khi dang nhap lan dau)\n\n";
 
     if (!ConsoleView::confirmAction("Xac nhan them the moi?")) {
@@ -289,7 +320,7 @@ void AdminController::deleteCard() {
     if (lBalance > 0) {
         ConsoleView::printWarning("==================== CANH BAO QUAN TRONG ====================");
         ConsoleView::printWarning("Tai khoan the " + strDelId + " (" + strName + ") van con so du:");
-        ConsoleView::printWarning(">> SO DU HIEN TAI: " + std::to_string(lBalance) + " VND <<");
+        ConsoleView::printWarning(">> SO DU HIEN TAI: " + ConsoleView::formatMoney(lBalance) + " " + acc.getCurrency() + " <<");
         ConsoleView::printWarning("Hanh dong xoa the se vo hieu hoa tai khoan va dong so du tren!");
         ConsoleView::printWarning("=============================================================\n");
     }
@@ -329,15 +360,17 @@ void AdminController::deleteCard() {
         FileService::saveLockedIds(this->_listLockedIds);
     }
 
-    // Xoa file [ID].txt (giu lai LichSu[ID].txt)
+    // Xoa file [ID].txt va archive file LichSu[ID].txt de tra soat
     bool bDelFile = FileService::deleteAccountFile(strDelId);
+    FileService::archiveHistoryFile(strDelId);
+    FileService::resetFailedAttempts(strDelId);
     if (!bDelFile) {
         ConsoleView::printWarning("The da xoa khoi danh sach nhung khong xoa duoc file data/" +
                                   strDelId + ".txt (co the file khong ton tai).");
     } else {
         ConsoleView::printSuccess("Xoa tai khoan " + strDelId + " thanh cong!");
         std::cout << "  + Da xoa: data/" << strDelId << ".txt\n";
-        std::cout << "  + Giu lai: data/LichSu" << strDelId << ".txt\n";
+        std::cout << "  + Da luu tru: data/LichSu" << strDelId << ".txt thanh ban luu (.bak)\n";
     }
 
     // Ghi nhat ky kiem toan
@@ -345,7 +378,7 @@ void AdminController::deleteCard() {
     if (!strName.empty()) {
         strDetail += " (" + strName + ")";
     }
-    strDetail += ", So du con lai: " + std::to_string(lBalance) + " VND";
+    strDetail += ", So du con lai: " + ConsoleView::formatMoney(lBalance) + " " + acc.getCurrency();
     FileService::appendAdminLog("DELETE_CARD", strDetail);
 
     ConsoleView::pauseScreen();
@@ -451,6 +484,7 @@ void AdminController::unlockCard() {
     if (pCard != nullptr) {
         pCard->unlockCard();
     }
+    FileService::resetFailedAttempts(strUnlockId);
 
     // 2. Xoa triet de moi ban sao khoi KhoaThe.txt
     while (this->_listLockedIds.removeIf([&strUnlockId](const std::string& id) {

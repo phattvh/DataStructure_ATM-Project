@@ -44,18 +44,17 @@ void Account::setCurrency(const std::string& strCurrency) {
 }
 
 ErrorCode Account::canWithdraw(long lAmount) const {
-    long lMinTrans = (this->_strCurrency == "USD") ? 10 : MIN_TRANSACTION;
-    long lMinReserve = (this->_strCurrency == "USD") ? 10 : MIN_BALANCE_RESERVE;
+    CurrencyConfig cfg = getCurrencyConfig(this->_strCurrency);
 
-    if (lAmount < lMinTrans) {
+    if (lAmount < cfg.lMinTransaction) {
         return ERR_INVALID_AMOUNT;
     }
     
-    if (lAmount % lMinTrans != 0) {
+    if (lAmount % cfg.lMinTransaction != 0) {
         return ERR_NOT_MULTIPLE;
     }
 
-    if (this->_lBalance < lAmount || (this->_lBalance - lAmount) < lMinReserve) {
+    if (this->_lBalance < lAmount || (this->_lBalance - lAmount) < cfg.lMinReserve) {
         return ERR_INSUFFICIENT_FUNDS;
     }
     
@@ -79,6 +78,12 @@ bool Account::deposit(long lAmount) {
     if (std::numeric_limits<long>::max() - this->_lBalance < lAmount) {
         return false;
     }
+
+    CurrencyConfig cfg = getCurrencyConfig(this->_strCurrency);
+    if (this->_lBalance + lAmount > cfg.lMaxBalance) {
+        return false;
+    }
+
     this->_lBalance += lAmount;
     return true;
 }

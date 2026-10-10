@@ -19,6 +19,42 @@ inline constexpr int MAX_FAILED_LOGINS = 3;
 inline constexpr int ID_LENGTH = 14;
 inline constexpr int PIN_LENGTH = 6;
 inline const std::string DATA_DIR = "data/";
+inline constexpr long MAX_BALANCE_DEFAULT = 10000000000L; // 10 ty VND
+
+/**********************************************************
+ * @Description: Cau hinh chi tiet tung loai tien te trong he thong ATM
+ **********************************************************/
+struct CurrencyConfig {
+    std::string strCode;            // Ma tien te: VND, USD, EUR, JPY, GBP
+    std::string strName;            // Ten goi
+    long lMinTransaction;           // Han muc giao dich toi thieu va boi so
+    long lMinReserve;               // So du toi thieu can duy tri
+    long lMaxBalance;               // So du toi da cho phep luu tru
+    long lExchangeRateToVND;        // Ty gia quy doi tham chieu sang VND tai ATM
+};
+
+/**********************************************************
+ * @Description: Tra ve cau hinh quy chuan cho tung loai tien te
+ **********************************************************/
+inline CurrencyConfig getCurrencyConfig(const std::string& strCurrency) {
+    if (strCurrency == "USD") {
+        return {"USD", "US Dollar", 10, 10, 500000, 25400};
+    }
+    if (strCurrency == "EUR" || strCurrency == "EURO") {
+        return {"EUR", "Euro", 10, 10, 500000, 27500};
+    }
+    if (strCurrency == "JPY") {
+        return {"JPY", "Japanese Yen", 1000, 1000, 50000000, 170};
+    }
+    if (strCurrency == "GBP") {
+        return {"GBP", "British Pound", 10, 10, 400000, 32800};
+    }
+    if (strCurrency == "VND" || strCurrency.empty()) {
+        return {"VND", "Vietnamese Dong", MIN_TRANSACTION, MIN_BALANCE_RESERVE, MAX_BALANCE_DEFAULT, 1};
+    }
+    // Ngoai te tuy bien: giu nguyen ma ngoai te, han muc chuan ngoai te
+    return {strCurrency, strCurrency + " Currency", 10, 10, 1000000, 25000};
+}
 
 /**********************************************************
  * @Description: Loai giao dich ngan hang

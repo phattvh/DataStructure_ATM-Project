@@ -141,6 +141,34 @@ public:
      * @return true neu ghi thanh cong
      **********************************************************/
     static bool appendAdminLog(const std::string& strAction, const std::string& strDetail);
+
+    /**********************************************************
+     * @Description Luu tru tap tin lich su LichSu[ID].txt thanh file .bak khi xoa the
+     * @param strId Ma so tai khoan
+     * @return true neu luu tru thanh cong
+     **********************************************************/
+    static bool archiveHistoryFile(const std::string& strId);
+
+    /**********************************************************
+     * @Description Lay so lan dang nhap sai ben vung tu data/FailedAttempts.txt
+     * @param strId Ma so the
+     * @return So lan dang nhap sai
+     **********************************************************/
+    static int getFailedAttempts(const std::string& strId);
+
+    /**********************************************************
+     * @Description Ghi nhan 1 lan dang nhap sai ben vung vao data/FailedAttempts.txt
+     * @param strId Ma so the
+     * @return So lan sai moi
+     **********************************************************/
+    static int recordFailedAttempt(const std::string& strId);
+
+    /**********************************************************
+     * @Description Xoa bo dem dang nhap sai cua the khoi data/FailedAttempts.txt
+     * @param strId Ma so the
+     * @return true neu reset thanh cong
+     **********************************************************/
+    static bool resetFailedAttempts(const std::string& strId);
 };
 
 #endif // FILESERVICE_H_INCLUDED_

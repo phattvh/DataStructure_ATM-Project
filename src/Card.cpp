@@ -1,5 +1,6 @@
 #include "Card.h"
 #include "Common.h"
+#include "SecurityService.h"
 #include <cctype>
 
 bool Card::isValidPinFormat(const std::string& strPin) {
@@ -42,11 +43,11 @@ bool Card::isLocked() const {
 }
 
 bool Card::isDefaultPin() const {
-    return (this->_strPin == DEFAULT_PIN);
+    return (this->_strPin == DEFAULT_PIN || SecurityService::verifyHash(DEFAULT_PIN, this->_strPin));
 }
 
 bool Card::checkPin(const std::string& strInputPin) const {
-    return (this->_strPin == strInputPin);
+    return SecurityService::verifyHash(strInputPin, this->_strPin);
 }
 
 void Card::recordFailedAttempt() {
@@ -90,3 +91,11 @@ bool Card::changePin(const std::string& strNewPin) {
 int Card::getFailedAttempts() const {
     return this->_iFailedAttempts;
 }
+
+void Card::setFailedAttempts(int iAttempts) {
+    this->_iFailedAttempts = iAttempts;
+    if (this->_iFailedAttempts >= MAX_FAILED_LOGINS) {
+        this->_bIsLocked = true;
+    }
+}
+

@@ -1,4 +1,5 @@
 #include "Admin.h"
+#include "SecurityService.h"
 
 Admin::Admin() : _strUsername(""), _strPassword("") {}
 
@@ -14,5 +15,5 @@ std::string Admin::getPassword() const {
 }
 
 bool Admin::verifyPassword(const std::string& strPass) const {
-    return (this->_strPassword == strPass);
+    return SecurityService::verifyHash(strPass, this->_strPassword);
 }

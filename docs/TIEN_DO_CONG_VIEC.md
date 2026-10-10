@@ -18,8 +18,8 @@ pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án
 | :---------------------- | :--------------------------------------- | :-------: | :------------: | :----------------: | :---------: |
 | **TRÍ (Thành viên B)**  | Data Engineer / Memory & Storage Flow    |    12     |     **12**     |       **0**        | **100.0%**  |
 | **TUẤN (Thành viên A)** | Business Logic / User Flow & UI          |    13     |     **13**     |       **0**        | **100.0%**  |
-| **PHÁT (Thành viên C)** | Tech Lead / Core Controller & Admin Flow |    15     |     **15**     |       **0**        | **100.0%**  |
-| **TỔNG CỘNG**           | **Toàn đội ngũ 3 thành viên**            |  **40**   |     **40**     |       **2**        | **100.0%**  |
+| **PHÁT (Thành viên C)** | Tech Lead / Core Controller & Admin Flow |    18     |     **18**     |       **0**        | **100.0%**  |
+| **TỔNG CỘNG**           | **Toàn đội ngũ 3 thành viên**            |  **43**   |     **43**     |       **0**        | **100.0%**  |
 
 ---
 
@@ -92,6 +92,9 @@ pie title Tỷ Lệ Hoàn Thành Nhiệm Vụ Cả Dự Án
 | **C15** |      Phase 2      | Hoàn thiện tiêu chuẩn Production       | Menu số nghiêm ngặt, Phân trang sao kê, Admin Audit Log, Cảnh báo xóa thẻ có số dư, Non-tty fallback.                                  | `src/ConsoleView.cpp`<br>`src/UserController.cpp`<br>`test/test_phase_2_c.cpp` | **`DONE`** |
 | **C16** |      Phase 3      | Gia cố Luồng Đăng nhập & Thoát an toàn | Bổ sung bẫy hủy đăng nhập an toàn bằng phím Enter hoặc 0 khi nhập ID và PIN không phạt số lần sai; khóa thẻ vào `KhoaThe.txt`.         | `src/AtmController.cpp`                                                        | **`DONE`** |
 | **C17** |      Phase 3      | Bộ Kiểm thử Tự động Tích hợp Phase 3   | Xây dựng bộ test `test/test_phase_3.cpp` (58 test cases) và target `make test_phase_3` bao quát 100% luồng User & giao dịch tài chính. | `test/test_phase_3.cpp`<br>`Makefile`                                          | **`DONE`** |
+| **C18** |      Phase 4      | Tầng Bảo mật `SecurityService` & Đa tiền tệ | Thuật toán băm Salted-MD5 (RFC 1321), chống brute-force, Multi-Currency Engine & quy đổi ngoại tệ ceil division.                      | `include/SecurityService.h`<br>`src/SecurityService.cpp`<br>`include/Common.h` | **`DONE`** |
+| **C19** |      Phase 4      | Khóa File `flock` & Lưu bền vững sai PIN    | Cơ chế `FileLockGuard` chống race condition liên tiến trình, persist bộ đếm sai PIN qua reboot vào `FailedAttempts.txt`.               | `include/FileService.h`<br>`src/FileService.cpp`                               | **`DONE`** |
+| **C20** |      Phase 4      | Final Code Review & Thiết kế Chi tiết 5.x   | Trải qua 4 vòng review khắt khe, mở rộng 147 test cases tự động, hoàn thiện tài liệu Thiết kế Chi tiết Mục 5.1 - 5.15.                | `docs/05_thiet_ke_chi_tiet.md`<br>`test/test.cpp`                              | **`DONE`** |
 | **C13** |      Phase 4      | Hoàn thiện Sơ đồ Kỹ thuật Báo cáo      | Vẽ sơ đồ UML Lớp hoàn chỉnh và sơ đồ luồng dữ liệu kiến trúc đưa vào Báo cáo Word.                                                     | `docs/08_so_do_uml_va_luong_du_lieu.md`                                        | **`DONE`** |
 
 ---

@@ -63,6 +63,8 @@ compile_commands.json
 *.bak
 *.swp
 data/.system_initialized
+data/.atm_data.lock
+data/FailedAttempts.txt
 
 # vcpkg
 vcpkg_installed/
