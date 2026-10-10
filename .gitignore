@@ -39,6 +39,11 @@
 *.out
 *.app
 
+# Archives & Releases
+*.tar.gz
+*.tgz
+*.zip
+
 # Build directories
 build/
 Build/
