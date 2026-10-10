@@ -61,19 +61,31 @@ Dự án áp dụng mô hình **Lập trình Hướng đối tượng (OOP)** v�
 
 ## DỮ LIỆU TÀI KHOẢN MẪU (QUICK START)
 
-Dữ liệu mẫu được lưu trữ trong thư mục `data/` phục vụ kiểm thử:
+Dữ liệu mẫu thực tế được lưu trữ trong thư mục `data/` phục vụ kiểm thử và trải nghiệm hệ thống:
 
 ### 1. Phân hệ Quản trị viên (Admin)
+Lưu trữ tại `data/Admin.txt`:
 - **Tài khoản**: `admin1` | **Mật khẩu**: `123456`
+- **Tài khoản**: `admin2` | **Mật khẩu**: `123456`
 - **Tài khoản**: `superadmin` | **Mật khẩu**: `888888`
 
 ### 2. Phân hệ Khách hàng (User / Thẻ ATM)
-| Số thẻ (14 chữ số) | Mã PIN | Chủ tài khoản | Số dư ban đầu | Trạng thái / Mục đích kiểm thử |
+Lưu trữ tại `data/TheTu.txt` và các tệp tài khoản `data/[ID].txt`:
+
+| Số thẻ (14 chữ số) | Mã PIN nhập | Chủ tài khoản | Số dư ban đầu | Trạng thái / Mục đích kiểm thử |
 | :--- | :---: | :--- | :---: | :--- |
-| **`10014504500003`** | `654321` | Lê Văn Cường | 750.000 VND | Đã đổi PIN, truy cập thẳng Menu chính |
-| **`10014504500005`** | `888888` | Nguyễn Văn E | 3.000.000 VND | Hoạt động bình thường |
 | **`10014504500001`** | `123456` | Nguyen Trung Kien | 5.000.000 VND | PIN mặc định: Yêu cầu đổi PIN trước khi vào Menu |
-| **`10014504500002`** | `123456` | Tran Thi Binh | 1.200.000 VND | Sử dụng nhận tiền khi kiểm thử chuyển khoản |
+| **`10014504500002`** | `123456` | Tran Thi Hoa | 10.000.000 VND | PIN mặc định: Sử dụng chuyển/nhận tiền kiểm thử |
+| **`10014504500003`** | `654321` | Le Van Cuong | 2.500.000 VND | Đã đổi PIN: Đăng nhập truy cập thẳng Menu chính |
+| **`10014504500004`** | `123456` | Pham Minh Duc | 500.000 VND | PIN mặc định: Kiểm thử giao dịch số dư nhỏ |
+| **`10014504500005`** | `888888` | Hoang Quoc Bao | 12.000.000 VND | Đã đổi PIN: Số dư lớn, kiểm thử rút/chuyển khoản |
+| **`10014504500006`** | `123456` | Vo Thi Mai | 800.000 VND | PIN mặc định: Hoạt động bình thường |
+| **`10014504500007`** | `123456` | Dang Tuan Anh | 3.000.000 VND | PIN mặc định: Hoạt động bình thường |
+| **`10014504500008`** | `123456` | Bui Thi Lan | 1.500.000 VND | PIN mặc định: Hoạt động bình thường |
+| **`10014504500009`** | `123456` | Doan Ngoc Hai | 7.200.000 VND | PIN mặc định: Hoạt động bình thường |
+| **`10014504500010`** | `123456` | Truong Gia Binh | 20.000.000 VND | PIN mặc định: Số dư VIP, kiểm thử hạn mức lớn |
+
+*Lưu ý bảo mật*: Trong các tệp tin `TheTu.txt` và `Admin.txt`, các mã PIN và mật khẩu trên đều đã được băm tự động dưới dạng chuẩn **Salted-MD5 (32 ký tự hex)**. Khi đăng nhập tại màn hình ATM, người dùng chỉ cần nhập mã số thông thường như bảng trên, hệ thống sẽ tự động đối soát an toàn.
 
 ---
 

@@ -1,13 +1,13 @@
-﻿# KỊCH BẢN DEMO PHÂN HỆ KHÁCH HÀNG (USER MODULE DEMO SCRIPT)
+# KỊCH BẢN DEMO PHÂN HỆ KHÁCH HÀNG (USER MODULE DEMO SCRIPT)
 **Dự án**: Mô phỏng Hệ thống Cây ATM Ngân hàng (C++ OOP & Data Structures)  
 **Phân công**: Member A (Tuấn) — Business Logic & User Flow & Presentation Layer
 
 ---
 
 ## 1. Dữ liệu Kiểm thử Phân hệ User
-- **Thẻ 1 (Mặc định)**: 10014504500001 (Chủ TK: Nguyễn Văn An, Số dư: 500.000 VND, PIN mặc định: 123456)
-- **Thẻ 2 (Chuyển tiền)**: 10014504500002 (Chủ TK: Trần Thị Bình, Số dư: 1.200.000 VND, PIN: 123456)
-- **Thẻ 3 (Nhận tiền)**: 10014504500003 (Chủ TK: Lê Văn Cường, Số dư: 750.000 VND)
+- **Thẻ 1 (Mặc định)**: 10014504500001 (Chủ TK: Nguyen Trung Kien, Số dư: 5.000.000 VND, PIN mặc định: 123456)
+- **Thẻ 2 (Chuyển tiền)**: 10014504500002 (Chủ TK: Tran Thi Hoa, Số dư: 10.000.000 VND, PIN: 123456)
+- **Thẻ 3 (Nhận tiền)**: 10014504500003 (Chủ TK: Le Van Cuong, Số dư: 2.500.000 VND, PIN: 654321)
 
 ---
 
