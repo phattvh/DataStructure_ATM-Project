@@ -4,7 +4,7 @@
 
 ## I. THIẾT KẾ GENERIC TEMPLATE `LinkedList<T>`
 
-Để đạt trọn vẹn điểm số về mặt Cấu trúc dữ liệu & Template (2.0 điểm), hệ thống không sử dụng các container có sẵn của thư viện chuẩn STL (như `std::vector`, `std::list`) mà tự xây dựng lớp mẫu Danh sách liên kết đơn có con trỏ đuôi:
+Hệ thống không sử dụng các container có sẵn của thư viện chuẩn STL (như `std::vector`, `std::list`) mà tự xây dựng lớp mẫu Danh sách liên kết đơn có con trỏ đuôi:
 
 ```mermaid
 classDiagram
@@ -108,7 +108,7 @@ Bắt buộc toàn bộ các hàm nhận tham số danh sách liên kết phải
 
 ---
 
-## V. SO SÁNH HỌC THUẬT: VÌ SAO CHỌN LINKEDLIST?
+## V. VÌ SAO CHỌN LINKEDLIST?
 
 Để bảo vệ đồ án trước hội đồng chấm thi, nhóm làm rõ sự phù hợp của `LinkedList` so với các cấu trúc dữ liệu khác:
 
