@@ -81,11 +81,20 @@ void Card::setLocked(bool bLocked) {
 }
 
 bool Card::changePin(const std::string& strNewPin) {
-    if (!isValidPinFormat(strNewPin)) {
-        return false;
+    if (isValidPinFormat(strNewPin)) {
+        this->_strPin = strNewPin;
+        return true;
     }
-    this->_strPin = strNewPin;
-    return true;
+    if (strNewPin.length() == 32) {
+        for (char c : strNewPin) {
+            if (!std::isxdigit(static_cast<unsigned char>(c))) {
+                return false;
+            }
+        }
+        this->_strPin = strNewPin;
+        return true;
+    }
+    return false;
 }
 
 int Card::getFailedAttempts() const {

@@ -142,6 +142,7 @@ void testSuiteCardModel() {
     ASSERT_FALSE(cardUser.changePin("12345"), "Tu choi doi PIN khi thieu ky tu");
     ASSERT_TRUE(cardUser.changePin("888888"), "Doi PIN hop le '888888' thanh cong");
     ASSERT_EQUAL(cardUser.getPin(), std::string("888888"), "Ma PIN da duoc cap nhat moi");
+    ASSERT_TRUE(cardUser.checkPin("888888"), "checkPin xac thuc dung PIN moi");
 }
 
 /******************************************************************************
@@ -306,6 +307,7 @@ void testSuiteUserController() {
     ASSERT_FALSE(UserController::processChangePin(card, "123456", "654321", "654320", strMsg), "Xac nhan khong khop bi tu choi");
     ASSERT_TRUE(UserController::processChangePin(card, "123456", "654321", "654321", strMsg), "Doi PIN hop le thanh cong");
     ASSERT_EQUAL(card.getPin(), std::string("654321"), "PIN moi da duoc luu");
+    ASSERT_TRUE(card.checkPin("654321"), "checkPin xac thuc dung PIN moi");
 }
 
 /******************************************************************************
@@ -529,6 +531,62 @@ void testSuiteAdversarialHardening() {
         if (entry.path().string().find("Archive_LichSu" + strTestArchiveId) != std::string::npos) {
             std::filesystem::remove(entry.path());
         }
+    }
+
+    // 9. Kiểm thử Tự động băm khi lưu thẻ (saveCards Auto-Hash)
+    std::string strOrigTheTu;
+    {
+        std::ifstream f("data/TheTu.txt");
+        if (f.is_open()) {
+            std::ostringstream ss;
+            ss << f.rdbuf();
+            strOrigTheTu = ss.str();
+        }
+    }
+    std::string strOrigAdmin;
+    {
+        std::ifstream f("data/Admin.txt");
+        if (f.is_open()) {
+            std::ostringstream ss;
+            ss << f.rdbuf();
+            strOrigAdmin = ss.str();
+        }
+    }
+
+    LinkedList<Card> listTestCards;
+    listTestCards.addTail(Card("10014504509999", "123456", false));
+    ASSERT_TRUE(FileService::saveCards(listTestCards), "saveCards thuc thi thanh cong");
+    LinkedList<std::string> listEmptyLocked;
+    LinkedList<Card> listLoadedCards;
+    ASSERT_TRUE(FileService::loadCards(listLoadedCards, listEmptyLocked), "loadCards sau saveCards thanh cong");
+    auto pLoaded = listLoadedCards.findIf([](const Card& c) { return c.getId() == "10014504509999"; });
+    ASSERT_TRUE(pLoaded != nullptr, "Tim thay the vua luu");
+    if (pLoaded != nullptr) {
+        ASSERT_EQUAL(pLoaded->getPin(), SecurityService::hashPin("123456"), "saveCards tu dong bam PIN 123456 sang chuoi hash 32 hex");
+        ASSERT_TRUE(pLoaded->checkPin("123456"), "The da bam xac thuc dung PIN 123456");
+    }
+
+    // 10. Kiểm thử Tự động băm khi lưu Admin (saveAdmins Auto-Hash)
+    LinkedList<Admin> listTestAdmins;
+    listTestAdmins.addTail(Admin("admin_test_auto", "mypassword123"));
+    ASSERT_TRUE(FileService::saveAdmins(listTestAdmins), "saveAdmins thuc thi thanh cong");
+    LinkedList<Admin> listLoadedAdmins;
+    ASSERT_TRUE(FileService::loadAdmins(listLoadedAdmins), "loadAdmins sau saveAdmins thanh cong");
+    auto pLoadedAdmin = listLoadedAdmins.findIf([](const Admin& a) { return a.getUsername() == "admin_test_auto"; });
+    ASSERT_TRUE(pLoadedAdmin != nullptr, "Tim thay admin vua luu");
+    if (pLoadedAdmin != nullptr) {
+        ASSERT_EQUAL(pLoadedAdmin->getPassword(), SecurityService::hashPassword("mypassword123"), "saveAdmins tu dong bam pass sang chuoi hash 32 hex");
+        ASSERT_TRUE(pLoadedAdmin->verifyPassword("mypassword123"), "Admin da bam xac thuc dung password goc");
+    }
+
+    // Khoi phuc lai nguyen ven tap tin data/TheTu.txt va data/Admin.txt cho cac test tiep theo
+    if (!strOrigTheTu.empty()) {
+        std::ofstream f("data/TheTu.txt");
+        f << strOrigTheTu;
+    }
+    if (!strOrigAdmin.empty()) {
+        std::ofstream f("data/Admin.txt");
+        f << strOrigAdmin;
     }
 }
 

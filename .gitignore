@@ -38,6 +38,7 @@
 *.exe
 *.out
 *.app
+atm_project
 
 # Archives & Releases
 *.tar.gz

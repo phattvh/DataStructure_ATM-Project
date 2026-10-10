@@ -7,6 +7,22 @@ Dự án được thực hiện bởi nhóm 3 thành viên:
 - **Ngô Trí (Thành viên B - Member B)**: Phụ trách Cấu trúc Dữ liệu Tự tạo (`LinkedList<T>` Generic Template), Tầng Lưu trữ Tệp (`FileService` 5 file vật lý), Mô hình `Admin` & `Transaction`, Kiểm định Rò rỉ Bộ nhớ (Memory Leak Audit & Valgrind - 0 byte leak) và Báo cáo CTDL & Thuật toán Big-O.
 - **Trần Vũ Hỏa Phát (Thành viên C - Member C / Tech Lead)**: Phụ trách Kiến trúc Hệ thống Tổng thể, Định nghĩa Chung (`Common.h`), Makefile & Build Scripts, Bộ Điều phối Trung tâm (`AtmController`), Phân hệ Quản trị (`AdminController`), Bảo mật Terminal Raw Mode, Gia cố Tính toàn vẹn Dữ liệu (Atomic Write, Adversarial Hardening) và Hợp nhất Mã nguồn Đa nhánh.
 
+## [2.3.1] - 2026-10-11: Tự động Băm Mật khẩu & Nâng cấp Dữ liệu Đăng nhập (Auto-Hash & Login Migration)
+
+Bản cập nhật nâng cấp cơ chế tự động hóa bảo mật mật mã học, đảm bảo mã PIN người dùng và mật khẩu Quản trị viên luôn được lưu trữ dưới dạng băm Salted-MD5 (32 hex) trên toàn bộ hệ thống tệp tin.
+
+### Tính năng Bảo mật & Tự động hóa Mật mã học (Cryptographic Automation)
+- **Tự động băm khi tạo tài khoản thẻ mới (Admin Add Card & AtmController Add Card)**:
+  - Khi Admin tạo thẻ mới hoặc thêm thẻ qua menu ATM, mã PIN mặc định `123456` tự động được băm bằng `SecurityService::hashPin(DEFAULT_PIN)` thành chuỗi 32 hex trước khi ghi vào `data/TheTu.txt`.
+- **Tự động băm khi đổi mã PIN (User Change PIN)**:
+  - Khi khách hàng đổi mã PIN lần đầu hoặc đổi chủ động qua menu, mã PIN 6 số mới được tự động băm kèm chuỗi muối `PIN_SALT` trước khi lưu xuống đĩa.
+- **Cơ chế Tự động nâng cấp khi đăng nhập (Auto-Migrate on Login)**:
+  - Khi User hoặc Admin đăng nhập thành công bằng mật khẩu cũ (dạng số thường), hệ thống tự động băm mật khẩu đó và cập nhật ngay vào `data/TheTu.txt` hoặc `data/Admin.txt`.
+- **Đồng bộ hóa toàn bộ cơ sở dữ liệu mẫu (`data/TheTu.txt`, `data/Admin.txt`)**:
+  - Chuyển đổi toàn bộ 10 thẻ mẫu và 3 tài khoản Admin sang chuỗi băm 32 hex. Người dùng và Admin khi đăng nhập trên bàn phím vẫn gõ số bình thường (`123456`, `888888`), hệ thống tự động so khớp an toàn 100%.
+- **Bổ sung API `FileService::saveAdmins`**:
+  - Bổ sung hàm lưu danh sách Admin an toàn bằng cơ chế Atomic Write, tự động băm mật khẩu Admin nếu chưa ở dạng 32 hex.
+
 ---
 
 ## [2.3.0] - 2026-10-10: Phat hanh Chinh thuc Toan dien - Final Production Release (RC-Final)

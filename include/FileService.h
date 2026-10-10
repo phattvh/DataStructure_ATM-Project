@@ -25,6 +25,14 @@ public:
     static bool loadAdmins(LinkedList<Admin>& listAdmins);
 
     /**********************************************************
+     * @Description Ghi danh sach quan tri vien xuong tap tin data/Admin.txt,
+     * tu dong bam mat khau bang SecurityService::hashPassword neu chua bam
+     * @param listAdmins Tham chieu danh sach Admin can luu
+     * @return true neu ghi thanh cong, false neu that bai
+     **********************************************************/
+    static bool saveAdmins(const LinkedList<Admin>& listAdmins);
+
+    /**********************************************************
      * @Description Doc danh sach ma so the dang bi khoa tu data/KhoaThe.txt
      * @param listLockedIds Tham chieu danh sach ID bi khoa
      * @return true neu doc thanh cong, false neu khong mo duoc file

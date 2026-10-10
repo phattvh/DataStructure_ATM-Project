@@ -153,6 +153,22 @@ bool FileService::loadAdmins(LinkedList<Admin>& listAdmins) {
     return true;
 }
 
+bool FileService::saveAdmins(const LinkedList<Admin>& listAdmins) {
+    ensureDataDirExists();
+    std::string strPath = DATA_DIR + "Admin.txt";
+    std::ostringstream oss;
+    Node<Admin>* pCur = listAdmins.getHead();
+    while (pCur != nullptr) {
+        std::string strPass = pCur->_data.getPassword();
+        if (strPass.length() != 32) {
+            strPass = SecurityService::hashPassword(strPass);
+        }
+        oss << pCur->_data.getUsername() << " " << strPass << "\n";
+        pCur = pCur->_pNext;
+    }
+    return atomicWriteFile(strPath, oss.str());
+}
+
 bool FileService::loadLockedIds(LinkedList<std::string>& listLockedIds) {
     ensureDataDirExists();
     std::string strPath = DATA_DIR + "KhoaThe.txt";
@@ -225,7 +241,11 @@ bool FileService::saveCards(const LinkedList<Card>& listCards) {
     std::ostringstream oss;
     Node<Card>* pCur = listCards.getHead();
     while (pCur != nullptr) {
-        oss << pCur->_data.getId() << " " << pCur->_data.getPin() << "\n";
+        std::string strPin = pCur->_data.getPin();
+        if (strPin.length() != 32) {
+            strPin = SecurityService::hashPin(strPin);
+        }
+        oss << pCur->_data.getId() << " " << strPin << "\n";
         pCur = pCur->_pNext;
     }
     return atomicWriteFile(strPath, oss.str());
@@ -470,7 +490,7 @@ void FileService::initSampleData() {
             std::ofstream foutTheTu(strTheTuPath);
             if (foutTheTu.is_open()) {
                 for (const auto& card : sampleCards) {
-                    foutTheTu << card.szId << " " << card.szPin << "\n";
+                    foutTheTu << card.szId << " " << SecurityService::hashPin(card.szPin) << "\n";
                     // Tao file [ID].txt va LichSu[ID].txt
                     createAccountFiles(card.szId, card.szName, card.lBalance, "VND");
                 }

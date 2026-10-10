@@ -140,7 +140,7 @@ void testAdminAddCard() {
     });
     TEST_ASSERT(pCard != nullptr, "The moi duoc them vao danh sach RAM");
     if (pCard != nullptr) {
-        TEST_ASSERT(pCard->getPin() == DEFAULT_PIN, "Mã PIN ban dau dung 123456");
+        TEST_ASSERT(pCard->getPin() == DEFAULT_PIN || pCard->checkPin(DEFAULT_PIN), "Mã PIN ban dau dung 123456");
         TEST_ASSERT(!pCard->isLocked(), "The moi tao o trang thai chua bi khoa");
     }
 
@@ -429,7 +429,7 @@ void testAdversarialHardening() {
         auto pCard = listCardsDisk.findIf([&](const Card& c) {
             return c.getId() == strPinCardId;
         });
-        TEST_ASSERT(pCard != nullptr && pCard->getPin() == "654321", "TheTu.txt tren dia da luu ma PIN moi ngay lap tuc");
+        TEST_ASSERT(pCard != nullptr && (pCard->getPin() == "654321" || pCard->checkPin("654321")), "TheTu.txt tren dia da luu ma PIN moi ngay lap tuc");
 
         // Tra lai ma PIN cu de bao toan bo test
         FileService::updateCardPin(strPinCardId, "123456");

@@ -278,7 +278,7 @@ void testChangePinAndHistory() {
         return c.getId() == strId;
     });
     TEST_ASSERT(pCardOnDisk != nullptr, "Tim thay the 10014504500004 trong TheTu.txt tren dia");
-    TEST_ASSERT(pCardOnDisk != nullptr && pCardOnDisk->getPin() == "778899",
+    TEST_ASSERT(pCardOnDisk != nullptr && (pCardOnDisk->getPin() == "778899" || pCardOnDisk->checkPin("778899")),
                 "[A11] TheTu.txt tren dia da luu ben vung ma PIN moi 778899");
 
     // 3.5 Xem lich su giao dich

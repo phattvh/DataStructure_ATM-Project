@@ -11,6 +11,7 @@
 #include "ConsoleView.h"
 #include "FileService.h"
 #include "UserController.h"
+#include "SecurityService.h"
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -253,8 +254,8 @@ void AdminController::addNewCard() {
         return;
     }
 
-    // Cap nhat RAM: them Card moi voi PIN mac dinh
-    this->_listCards.addTail(Card(strNewId, DEFAULT_PIN, false));
+    // Cap nhat RAM: them Card moi voi PIN mac dinh da duoc bam
+    this->_listCards.addTail(Card(strNewId, SecurityService::hashPin(DEFAULT_PIN), false));
 
     // Cap nhat file TheTu.txt
     bool bSave = FileService::saveCards(this->_listCards);

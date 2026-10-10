@@ -1,4 +1,5 @@
 #include "AtmController.h"
+#include "SecurityService.h"
 #include <iostream>
 #include <iomanip>
 #include <thread>
@@ -104,6 +105,17 @@ void AtmController::processAdminLogin() {
     }
 
     if (this->authenticateAdmin(strUser, strPass)) {
+        // Tu dong nang cap mat khau Admin sang ma bam Salted-MD5 neu con la plaintext
+        auto pCurAdmin = this->_listAdmins.getHead();
+        while (pCurAdmin != nullptr) {
+            if (pCurAdmin->_data.getUsername() == strUser && pCurAdmin->_data.getPassword().length() != 32) {
+                pCurAdmin->_data = Admin(strUser, SecurityService::hashPassword(strPass));
+                FileService::saveAdmins(this->_listAdmins);
+                break;
+            }
+            pCurAdmin = pCurAdmin->_pNext;
+        }
+
         FileService::appendAdminLog("ADMIN_LOGIN_SUCCESS", "Admin dang nhap thanh cong: " + strUser);
         ConsoleView::printSuccess("Dang nhap Quan tri vien thanh cong!");
         this->_eCurrentRole = ROLE_ADMIN;
@@ -223,8 +235,8 @@ ErrorCode AtmController::addCardAccount(const std::string& strId,
         return ERR_FILE_NOT_FOUND;
     }
 
-    // 6. Them doi tuong Card moi vao LinkedList trong RAM voi PIN mac dinh (123456)
-    Card newCard(strId, DEFAULT_PIN, false);
+    // 6. Them doi tuong Card moi vao LinkedList trong RAM voi PIN mac dinh da duoc bam
+    Card newCard(strId, SecurityService::hashPin(DEFAULT_PIN), false);
     this->_listCards.addTail(newCard);
 
     // 7. Ghi de cap nhat danh sach the vao data/TheTu.txt
@@ -560,6 +572,12 @@ void AtmController::processUserLogin() {
     // Dang nhap thanh cong: reset bo dem sai ben vung
     FileService::resetFailedAttempts(strId);
     pCard->resetFailedAttempts();
+
+    // Tu dong nang cap ma PIN cu sang ma bam Salted-MD5 tren dia neu con la plaintext
+    if (pCard->getPin().length() != 32) {
+        pCard->changePin(strPin);
+        FileService::saveCards(this->_listCards);
+    }
 
     // Dang nhap thanh cong -> Khoi tao phien lam viec
     this->_pCurrentCard = pCard;
