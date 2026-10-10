@@ -71,51 +71,103 @@ Dữ liệu mẫu đã được tích hợp sẵn trong thư mục `data/` phụ
 
 ---
 
-## 🚀 HƯỚNG DẪN BIÊN DỊCH & CHẠY ỨNG DỤNG
+## 🚀 HƯỚNG DẪN BIÊN DỊCH & CHẠY ỨNG DỤNG CHI TIẾT
 
-### 1. Yêu cầu môi trường
+Dự án được thiết kế hoàn toàn bằng chuẩn **ISO C++17 thuần túy**, **không phụ thuộc bất kỳ thư viện bên ngoài nào (Zero External Dependencies)**. Nhóm cung cấp 4 phương án chạy linh hoạt phù hợp với mọi cấu hình máy tính của Giảng viên và người chấm bài:
 
-- **Hệ điều hành**: Linux (Ubuntu 20.04/22.04/24.04), macOS, hoặc Windows (thông qua WSL hoặc MinGW GCC).
-- **Trình biên dịch**: `g++` hỗ trợ chuẩn **C++17** trở lên.
-- **Công cụ xây dựng**: `make`.
-- **Công cụ kiểm định bộ nhớ (tùy chọn)**: `valgrind` (trên Linux).
+---
 
-### 2. Các lệnh thao tác chính với `Makefile`
+### 🟢 PHƯƠNG ÁN 1: Chạy nhanh nhất bằng Script 1-Click (Khuyên dùng cho Giảng viên)
+> Không yêu cầu cấu hình phức tạp, script tự động nhận diện hệ điều hành và tự biên dịch ứng dụng.
+
+#### 1. Trên Linux / macOS / WSL:
+Chỉ cần mở Terminal tại thư mục dự án và chạy:
+```bash
+./run.sh
+```
+*(Nếu chưa cấp quyền thực thi: `chmod +x run.sh && ./run.sh`)*  
+*Script sẽ tự kiểm tra: Nếu máy có `make` sẽ dùng `make`, nếu máy **không có `make`** sẽ tự động chuyển sang gọi trực tiếp `g++` để biên dịch ra `build/atm_app` và khởi chạy ngay.*
+
+#### 2. Trên Windows:
+- **Cách 1 (Đơn giản nhất)**: **Click đúp chuột (Double Click)** trực tiếp vào file **`run.bat`** trong thư mục dự án.
+- **Cách 2**: Mở Command Prompt (CMD) hoặc PowerShell tại thư mục dự án và gõ:
+  ```cmd
+  run.bat
+  ```
+*(Tự động tạo thư mục `build`, biên dịch mã nguồn qua `g++` thành `build\atm_app.exe` và mở cửa sổ ATM để kiểm thử ngay mà **tuyệt đối không cần cài đặt `make`**).*
+
+---
+
+### 🟡 PHƯƠNG ÁN 2: Biên dịch trực tiếp bằng lệnh `g++` (Khi máy Thầy KHÔNG CÓ `make`)
+> Dành cho trường hợp máy tính của Thầy chỉ cài sẵn MinGW / GCC `g++` mà chưa cài tiện ích `make`.
+
+#### 1. Trên Linux / macOS / WSL:
+Chạy đúng 1 dòng lệnh duy nhất để biên dịch toàn bộ mã nguồn:
+```bash
+g++ -std=c++17 -Wall -Wextra -Iinclude src/*.cpp -o atm_app
+./atm_app
+```
+
+#### 2. Trên Windows (CMD hoặc PowerShell có g++ MinGW):
+```cmd
+g++ -std=c++17 -Wall -Wextra -Iinclude src\*.cpp -o atm_app.exe
+atm_app.exe
+```
+
+*Giải thích các cờ lệnh:*
+* `-std=c++17`: Kích hoạt chuẩn C++17 bắt buộc (cho `inline` constants, `<filesystem>`, `auto`).
+* `-Iinclude`: Khai báo đường dẫn chứa các file header (`.h`).
+* `src/*.cpp`: Biên dịch toàn bộ các file hiện thực lớp.
+* `-Wall -Wextra`: Bật toàn bộ các cảnh báo biên dịch nghiêm ngặt (mã nguồn đạt chuẩn 0 warnings).
+
+---
+
+### 🔵 PHƯƠNG ÁN 3: Sử dụng `Makefile` (Môi trường Linux / WSL / MSYS2 có sẵn `make`)
 
 ```bash
-# 1. Biên dịch ứng dụng ATM chính thức (sản phẩm tạo ra tại build/atm_app)
+# 1. Biên dịch ứng dụng ATM chính thức (file thực thi tạo ra tại build/atm_app)
 make app
 
-# 2. Khởi chạy ứng dụng máy ATM
+# 2. Khởi chạy ứng dụng máy ATM vừa biên dịch
 ./build/atm_app
-# (hoặc có thể chạy trực tiếp: ./atm_project.exe)
 
-# 3. Chạy toàn bộ tất cả các bộ kiểm thử tự động (100% test coverage)
+# 3. Chạy toàn bộ 100% tất cả các bộ kiểm thử tự động (51 test User, 58 test Phase 3, 67 test Mem)
 make test
 
-# 4. Chạy riêng bài kiểm định rò rỉ bộ nhớ (Memory Audit - 67 test cases, 0 bytes leak)
+# 4. Chạy riêng bài kiểm định rò rỉ bộ nhớ (Memory Audit - 67 test cases, 0 bytes leaked)
 make test_mem
 
-# 5. Chạy riêng bài kiểm thử nghiệp vụ User & Giao dịch tài chính Member A (51 test cases)
+# 5. Chạy riêng bài kiểm thử nghiệp vụ Khách hàng & Giao dịch tài chính Member A (51 test cases)
 make test_phase_3_a
 
-# 6. Kiểm tra an toàn bộ nhớ với AddressSanitizer & UndefinedBehaviorSanitizer
+# 6. Kiểm tra an toàn bộ nhớ với AddressSanitizer (ASan) & UndefinedBehaviorSanitizer (UBSan)
 make test_asan
 
 # 7. Chạy kiểm tra rò rỉ bộ nhớ chuyên sâu với Valgrind (trên Linux)
 bash scripts/valgrind_check.sh
 
-# 8. Dọn dẹp toàn bộ tệp tin đối tượng (.o) và tệp thực thi trong build/
+# 8. Dọn dẹp sạch sẽ toàn bộ tệp đối tượng (.o) và tệp thực thi trong thư mục build/
 make clean
 ```
 
-> [!TIP]
-> Trong quá trình test, nếu bạn muốn nhanh chóng đưa toàn bộ dữ liệu mẫu trong `data/` về lại trạng thái ban đầu sạch sẽ, bạn chỉ cần chạy:
->
-> ```bash
-> git restore data/
-> git clean -fd data/
-> ```
+---
+
+### 🟣 PHƯƠNG ÁN 4: Chạy file thực thi đã biên dịch sẵn (Pre-compiled Binaries)
+Dự án đã tích hợp sẵn file nhị phân được biên dịch từ phiên bản mới nhất, có thể chạy thử nghiệm ngay:
+```bash
+./atm_project.exe
+# Hoặc:
+./build/atm_app
+```
+
+---
+
+### 🔄 Hướng dẫn Khôi phục Dữ liệu Mẫu sau khi Kiểm thử
+Trong quá trình test các tính năng như Rút tiền, Chuyển tiền, Khóa thẻ hay Đổi PIN, hệ thống sẽ ghi thay đổi trực tiếp vào các file trong thư mục `data/`. Để đưa toàn bộ dữ liệu mẫu về trạng thái ban đầu sạch sẽ, bạn chỉ cần gõ 2 lệnh sau:
+```bash
+git restore data/
+git clean -fd data/
+```
 
 ---
 
@@ -124,6 +176,9 @@ make clean
 ```text
 DataStructure_ATM-Project/
 ├── Makefile                          # Script biên dịch tự động (g++ -std=c++17 -Wall -Wextra)
+├── run.sh                            # Script 1-Click tự động hóa cho Linux / macOS (có hoặc không có make)
+├── run.bat                           # Script 1-Click tự động hóa cho Windows (click đúp là chạy ngay)
+├── atm_project.exe                   # File thực thi nhị phân đã biên dịch sẵn
 ├── README.md                         # Tài liệu giới thiệu tổng quan dự án
 ├── CHANGELOG.md                      # Nhật ký chi tiết toàn bộ các phiên bản và đóng góp
 ├── Project/                          # Đề bài và biểu mẫu đồ án gốc từ giảng viên
@@ -138,7 +193,6 @@ DataStructure_ATM-Project/
 │   ├── [ID].txt                      # Tệp chi tiết từng tài khoản (ID, Tên, Số dư, Tiền tệ)
 │   └── LichSu[ID].txt                # Nhật ký biến động số dư theo thời gian thực
 ├── docs/                             # Hệ thống tài liệu kỹ thuật chi tiết
-│   ├── README.md                     # Mục lục điều hướng tài liệu kỹ thuật
 │   ├── TIEN_DO_CONG_VIEC.md          # Bảng theo dõi tiến độ công việc (Task Tracker)
 │   ├── DemoScript_User.md            # Kịch bản demo phân hệ User (Member A)
 │   ├── 01_tieu_chi_cham.md           # Thang điểm chi tiết & 4 bẫy kỹ thuật C++

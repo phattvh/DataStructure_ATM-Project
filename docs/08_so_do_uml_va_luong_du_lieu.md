@@ -1,6 +1,6 @@
 # 08. SƠ ĐỒ UML LỚP VÀ LUỒNG DỮ LIỆU BÁO CÁO (UML & DATA FLOW)
 
-Tài liệu này cung cấp toàn bộ sơ đồ kỹ thuật chuẩn UML (Sơ đồ Lớp, Sơ đồ Phân tầng, Sơ đồ Tuần tự giao dịch) phục vụ trực tiếp cho việc đưa vào Báo cáo Word của đồ án môn học.
+Tài liệu này cung cấp toàn bộ sơ đồ kỹ thuật chuẩn UML (Sơ đồ Lớp, Sơ đồ Phân tầng DFD, Sơ đồ Tuần tự giao dịch) phục vụ trực tiếp cho việc đưa vào Báo cáo Word của đồ án môn học.
 
 ---
 
@@ -11,39 +11,39 @@ classDiagram
     direction TB
 
     %% Template Cấu trúc dữ liệu
-    class Node~T~ {
+    class Node {
         +T _data
-        +Node~T~* _pNext
-        +Node(const T& data)
+        +Node* _pNext
+        +Node(data)
     }
 
-    class LinkedList~T~ {
-        -Node~T~* _pHead
-        -Node~T~* _pTail
+    class LinkedList {
+        -Node* _pHead
+        -Node* _pTail
         -int _iSize
         +LinkedList()
-        +~LinkedList()
-        +bool isEmpty() const
-        +int getSize() const
-        +Node~T~* getHead() const
-        +Node~T~* getTail() const
-        +void addTail(const T& item)
-        +T* findIf(Predicate pred)
-        +bool removeIf(Predicate pred)
-        +void clear()
+        +destruct()
+        +isEmpty() bool
+        +getSize() int
+        +getHead() Node*
+        +getTail() Node*
+        +addTail(item) void
+        +findIf(pred) T*
+        +removeIf(pred) bool
+        +clear() void
     }
 
-    Node~T~ --* LinkedList~T~ : Chứa
+    Node --* LinkedList : Chứa
 
     %% Tầng Thực thể (Entity Models)
     class Admin {
         -string _strUsername
         -string _strPassword
         +Admin()
-        +Admin(string strUser, string strPass)
-        +string getUsername() const
-        +string getPassword() const
-        +bool verifyPassword(string strPass) const
+        +Admin(strUser, strPass)
+        +getUsername() string
+        +getPassword() string
+        +verifyPassword(strPass) bool
     }
 
     class Card {
@@ -52,21 +52,21 @@ classDiagram
         -int _iFailedAttempts
         -bool _bIsLocked
         +Card()
-        +Card(string strId, string strPin)
-        +Card(string strId, string strPin, bool bIsLocked)
-        +string getId() const
-        +string getPin() const
-        +bool isLocked() const
-        +bool isDefaultPin() const
-        +bool checkPin(string strInputPin) const
-        +void recordFailedAttempt()
-        +void resetFailedAttempts()
-        +void unlockCard()
-        +void lockCard()
-        +void setLocked(bool bLocked)
-        +bool changePin(string strNewPin)
-        +int getFailedAttempts() const
-        +static bool isValidPinFormat(string strPin)
+        +Card(strId, strPin)
+        +Card(strId, strPin, bIsLocked)
+        +getId() string
+        +getPin() string
+        +isLocked() bool
+        +isDefaultPin() bool
+        +checkPin(strInputPin) bool
+        +recordFailedAttempt() void
+        +resetFailedAttempts() void
+        +unlockCard() void
+        +lockCard() void
+        +setLocked(bLocked) void
+        +changePin(strNewPin) bool
+        +getFailedAttempts() int
+        +isValidPinFormat(strPin)$ bool
     }
 
     class Account {
@@ -75,17 +75,17 @@ classDiagram
         -long _lBalance
         -string _strCurrency
         +Account()
-        +Account(string strId, string strName, long lBalance, string strCurrency)
-        +string getId() const
-        +string getName() const
-        +long getBalance() const
-        +string getCurrency() const
-        +void setName(string strName)
-        +void setBalance(long lBalance)
-        +void setCurrency(string strCurrency)
-        +ErrorCode canWithdraw(long lAmount) const
-        +bool withdraw(long lAmount)
-        +bool deposit(long lAmount)
+        +Account(strId, strName, lBalance, strCurrency)
+        +getId() string
+        +getName() string
+        +getBalance() long
+        +getCurrency() string
+        +setName(strName) void
+        +setBalance(lBalance) void
+        +setCurrency(strCurrency) void
+        +canWithdraw(lAmount) ErrorCode
+        +withdraw(lAmount) bool
+        +deposit(lAmount) bool
     }
 
     class Transaction {
@@ -95,136 +95,137 @@ classDiagram
         -string _strTimestamp
         -string _strDetail
         +Transaction()
-        +Transaction(string strId, TransactionType eType, long lAmount, string strTimestamp, string strDetail)
-        +string getId() const
-        +TransactionType getType() const
-        +string getTypeName() const
-        +long getAmount() const
-        +string getTimestamp() const
-        +string getDetail() const
-        +string formatForFile() const
-        +string toString() const
-        +static Transaction parseFromFileLine(string strId, string strLine)
-        +static string getCurrentTimestamp()
+        +Transaction(strId, eType, lAmount, strTimestamp, strDetail)
+        +getId() string
+        +getType() TransactionType
+        +getTypeName() string
+        +getAmount() long
+        +getTimestamp() string
+        +getDetail() string
+        +formatForFile() string
+        +toString() string
+        +parseFromFileLine(strId, strLine)$ Transaction
+        +getCurrentTimestamp()$ string
     }
 
     %% Tầng Dịch vụ Tệp tin (Persistence Service)
     class FileService {
-        +static bool loadAdmins(LinkedList~Admin~& listAdmins)
-        +static bool loadCards(LinkedList~Card~& listCards, const LinkedList~string~& listLockedIds)
-        +static bool saveCards(const LinkedList~Card~& listCards)
-        +static bool loadLockedIds(LinkedList~string~& listLockedIds)
-        +static bool saveLockedIds(const LinkedList~string~& listLockedIds)
-        +static bool appendLockedCard(string strId)
-        +static bool updateCardPin(string strId, string strNewPin)
-        +static ErrorCode loadAccount(string strId, Account& acc)
-        +static bool saveAccount(const Account& acc)
-        +static bool deleteAccountFile(string strId)
-        +static bool createAccountFiles(string strId, string strName, long lInitialBalance, string strCurrency)
-        +static bool appendTransaction(string strId, const Transaction& trans)
-        +static bool loadTransactions(string strId, LinkedList~Transaction~& listTrans)
-        +static void initSampleData()
-        +static bool appendAdminLog(string strAction, string strDetail)
+        +loadAdmins(listAdmins)$ bool
+        +loadCards(listCards, listLockedIds)$ bool
+        +saveCards(listCards)$ bool
+        +loadLockedIds(listLockedIds)$ bool
+        +saveLockedIds(listLockedIds)$ bool
+        +appendLockedCard(strId)$ bool
+        +updateCardPin(strId, strNewPin)$ bool
+        +loadAccount(strId, acc)$ ErrorCode
+        +saveAccount(acc)$ bool
+        +deleteAccountFile(strId)$ bool
+        +createAccountFiles(strId, strName, lBalance, strCurrency)$ bool
+        +appendTransaction(strId, trans)$ bool
+        +loadTransactions(strId, listTrans)$ bool
+        +initSampleData()$ void
+        +appendAdminLog(strAction, strDetail)$ bool
     }
 
     %% Tầng Giao diện (Presentation Layer)
     class ConsoleView {
-        +static void printHeader(string strTitle)
-        +static void printPrompt(string strPrompt)
-        +static void printError(string strMsg)
-        +static void printSuccess(string strMsg)
-        +static void printWarning(string strMsg)
-        +static void printInfo(string strMsg)
-        +static string inputPassword(string strPrompt, istream* pInStream)
-        +static string inputPin(string strPrompt)
-        +static long inputMoney(string strPrompt, istream& inStream)
-        +static int inputMenuChoice(int iMin, int iMax, string strPrompt, istream& inStream)
-        +static string inputLine(string strPrompt)
-        +static bool confirmAction(string strPrompt)
-        +static void printMainMenu()
-        +static void printAdminMenu()
-        +static void printUserMenu()
-        +static void clearScreen()
-        +static void pauseScreen()
-        +static void printReceipt(string strId, string strAction, long lAmount, long lRemainingBalance, string strTimestamp, string strCurrency)
-        +static void displayAccountDetails(string strId, string strName, long lBalance, string strCurrency)
-        +static void displayAccountInfo(const Account& account)
+        +printHeader(strTitle)$ void
+        +printPrompt(strPrompt)$ void
+        +printError(strMsg)$ void
+        +printSuccess(strMsg)$ void
+        +printWarning(strMsg)$ void
+        +printInfo(strMsg)$ void
+        +inputPassword(strPrompt, pInStream)$ string
+        +inputPin(strPrompt)$ string
+        +inputMoney(strPrompt, inStream)$ long
+        +inputMenuChoice(iMin, iMax, strPrompt, inStream)$ int
+        +inputLine(strPrompt)$ string
+        +confirmAction(strPrompt)$ bool
+        +printMainMenu()$ void
+        +printAdminMenu()$ void
+        +printUserMenu()$ void
+        +clearScreen()$ void
+        +pauseScreen()$ void
+        +printReceipt(strId, strAction, lAmount, lRemBalance, strTime, strCurrency)$ void
+        +displayAccountDetails(strId, strName, lBalance, strCurrency)$ void
+        +displayAccountInfo(account)$ void
     }
 
     %% Tầng Điều phối Nghiệp vụ (Controllers)
     class UserController {
-        +static bool isValidPinFormat(string strPin)
-        +static bool isValidIdFormat(string strId)
-        +static bool authenticate(Card& card, string strInputPin, bool& bOutCardLocked)
-        +static bool enforceDefaultPinChange(Card& card)
-        +static ErrorCode processWithdraw(Account& acc, long lAmount)
-        +static ErrorCode processTransfer(Account& senderAcc, Account& receiverAcc, long lAmount)
-        +static bool processChangePin(Card& card, string strOldPin, string strNewPin, string strConfirmPin, string& strOutMessage)
-        +static void displayAccountInfo(const Account& acc)
-        +static void runUserSession(Card& card, Account& acc, Account* pReceiverMock)
+        +isValidPinFormat(strPin)$ bool
+        +isValidIdFormat(strId)$ bool
+        +authenticate(card, strInputPin, bOutCardLocked)$ bool
+        +enforceDefaultPinChange(card)$ bool
+        +processWithdraw(acc, lAmount)$ ErrorCode
+        +processWithdrawAndPersist(acc, lAmount, bOutCardFailed)$ ErrorCode
+        +processTransfer(senderAcc, receiverAcc, lAmount)$ ErrorCode
+        +processTransferAndPersist(senderAcc, strReceiverId, lAmount, strCurrency)$ ErrorCode
+        +processChangePin(card, strOldPin, strNewPin, strConfirmPin, strOutMsg)$ bool
+        +processChangePinAndPersist(card, strNewPin)$ bool
+        +displayTransactionHistory(strId, bPause)$ bool
+        +displayAccountInfo(acc)$ void
+        +runUserSession(card, acc, pReceiverMock)$ void
     }
 
     class AdminController {
-        -LinkedList~Admin~ _listAdmins
-        -LinkedList~Card~ _listCards
-        -LinkedList~string~ _listLockedIds
+        -LinkedList _listAdmins
+        -LinkedList _listCards
+        -LinkedList _listLockedIds
         +AdminController()
-        +bool loadAllData()
-        +bool verifyAdmin(string strUser, string strPass) const
-        +void viewCardList() const
-        +void addNewCard()
-        +void deleteCard()
-        +void unlockCard()
-        +void processAdminMenu()
+        +loadAllData() bool
+        +verifyAdmin(strUser, strPass) bool
+        +viewCardList() void
+        +addNewCard() void
+        +deleteCard() void
+        +unlockCard() void
+        +processAdminLogin() bool
+        +processAdminMenu() void
     }
 
     class AtmController {
-        -LinkedList~Admin~ _listAdmins
-        -LinkedList~Card~ _listCards
-        -LinkedList~string~ _listLockedIds
+        -LinkedList _listAdmins
+        -LinkedList _listCards
+        -LinkedList _listLockedIds
         -Account* _pCurrentAccount
         -Card* _pCurrentCard
         -UserRole _eCurrentRole
         +AtmController()
-        +~AtmController()
-        +bool initData()
-        +void run()
-        +void cleanupSession()
-        +bool authenticateAdmin(string strUser, string strPass) const
-        +void processAdminLogin()
-        +void processAdminMenu()
-        +void adminViewCards()
-        +ErrorCode addCardAccount(string strId, string strName, long lInitialBalance, string strCurrency)
-        +void adminAddCard()
-        +ErrorCode deleteCardAccount(string strId)
-        +void adminDeleteCard()
-        +ErrorCode unlockCardAccount(string strId)
-        +void adminUnlockCard()
-        +void processUserLogin()
-        +void processUserMenu()
+        +destruct()
+        +initData() bool
+        +run() void
+        +cleanupSession() void
+        +authenticateAdmin(strUser, strPass) bool
+        +processAdminLogin() void
+        +processAdminMenu() void
+        +adminViewCards() void
+        +addCardAccount(strId, strName, lBalance, strCurrency) ErrorCode
+        +adminAddCard() void
+        +deleteCardAccount(strId) ErrorCode
+        +adminDeleteCard() void
+        +unlockCardAccount(strId) ErrorCode
+        +adminUnlockCard() void
+        +processUserLogin() void
+        +processUserMenu() void
     }
 
     %% Mối quan hệ giữa các lớp
-    AtmController o-- LinkedList~Admin~
-    AtmController o-- LinkedList~Card~
-    AtmController o-- LinkedList~string~
-    AtmController o-- Account
-    AtmController o-- Card
-    AtmController ..> UserController : Sử dụng
-    AtmController ..> AdminController : Tích hợp
-    AtmController ..> FileService : I/O Tệp
-    AtmController ..> ConsoleView : Giao diện
+    AtmController o-- LinkedList : Chứa danh sách
+    AtmController o-- Account : Quản lý phiên
+    AtmController o-- Card : Quản lý phiên
+    AtmController ..> UserController : Điều hướng User
+    AtmController ..> AdminController : Tích hợp Admin
+    AtmController ..> FileService : Nạp dữ liệu
+    AtmController ..> ConsoleView : Hiển thị Menu
 
-    AdminController o-- LinkedList~Admin~
-    AdminController o-- LinkedList~Card~
-    AdminController o-- LinkedList~string~
-    AdminController ..> FileService : I/O Tệp
-    AdminController ..> ConsoleView : Giao diện
+    AdminController o-- LinkedList : Chứa danh sách
+    AdminController ..> FileService : Đọc ghi tệp
+    AdminController ..> ConsoleView : Giao diện Admin
 
     UserController ..> Account : Biến đổi số dư
-    UserController ..> Card : Đổi PIN / Khóa
+    UserController ..> Card : Đổi PIN hoặc Khóa
     UserController ..> FileService : Lưu tức thì
-    UserController ..> ConsoleView : Giao diện
+    UserController ..> ConsoleView : Giao diện User
 ```
 
 ---
@@ -233,36 +234,36 @@ classDiagram
 
 ```mermaid
 flowchart TD
-    User([Khách hàng / Admin])
+    User(["Khách hàng / Quản trị viên"])
 
-    subgraph UI ["Tầng Giao Diện (ConsoleView)"]
-        CV[ConsoleView<br>• Hiển thị menu ANSI<br>• Bắt phím ẩn mã PIN *<br>• Bẫy lỗi nhập số cin.fail]
+    subgraph UI ["Tầng Giao Diện ConsoleView"]
+        CV["ConsoleView<br>- Hiển thị menu ANSI<br>- Bắt phím ẩn mã PIN *<br>- Bẫy lỗi nhập số cin.fail"]
     end
 
-    subgraph Controller ["Tầng Điều Phối (Controllers)"]
-        ATM[AtmController<br>• Quản lý phiên làm việc<br>• Điều phối vòng lặp chính]
-        UC[UserController<br>• Rút tiền<br>• Chuyển tiền nguyên tử<br>• Đổi mã PIN]
-        AC[AdminController<br>• Xem DS thẻ<br>• Thêm thẻ 2 file<br>• Xóa thẻ & Cảnh báo<br>• Mở khóa thẻ]
+    subgraph Controller ["Tầng Điều Phối Controllers"]
+        ATM["AtmController<br>- Quản lý phiên làm việc<br>- Điều phối vòng lặp chính"]
+        UC["UserController<br>- Rút tiền persistence<br>- Chuyển tiền nguyên tử ACID<br>- Đổi mã PIN & Lịch sử"]
+        AC["AdminController<br>- Xem DS thẻ<br>- Thêm thẻ mới 2 file<br>- Xóa thẻ an toàn<br>- Mở khóa thẻ"]
     end
 
-    subgraph Memory ["Tầng RAM (LinkedList & Entities)"]
-        RAM_Cards[LinkedList&lt;Card&gt;]
-        RAM_Locked[LinkedList&lt;string&gt;]
-        RAM_Admins[LinkedList&lt;Admin&gt;]
-        RAM_Acc[Account Hiện Tại]
+    subgraph Memory ["Tầng Bộ Nhớ RAM"]
+        RAM_Cards["LinkedList Card"]
+        RAM_Locked["LinkedList LockedIDs"]
+        RAM_Admins["LinkedList Admin"]
+        RAM_Acc["Account Hien Tai"]
     end
 
-    subgraph Service ["Tầng Dịch Vụ Lưu Trữ (FileService)"]
-        FS[FileService<br>• atomicWriteFile có .bak<br>• Đọc 4 dòng getline có space<br>• Ghi log appending std::ios::app]
+    subgraph Service ["Tầng Dịch Vụ Lưu Trữ FileService"]
+        FS["FileService<br>- atomicWriteFile co PID va .bak<br>- Doc 4 dong getline ho ten co khoang trang<br>- Ghi log noi std::ios::app"]
     end
 
-    subgraph Disk ["Tầng Tệp Vật Lý (data/)"]
-        F_Admin[(Admin.txt)]
-        F_TheTu[(TheTu.txt)]
-        F_KhoaThe[(KhoaThe.txt)]
-        F_Acc[([ID].txt)]
-        F_History[(LichSu[ID].txt)]
-        F_Log[(AdminLog.txt)]
+    subgraph Disk ["Tầng Tệp Vật Lý Thư Mục data/"]
+        F_Admin[("data/Admin.txt")]
+        F_TheTu[("data/TheTu.txt")]
+        F_KhoaThe[("data/KhoaThe.txt")]
+        F_Acc[("data/ID.txt")]
+        F_History[("data/LichSuID.txt")]
+        F_Log[("data/AdminLog.txt")]
     end
 
     User <-->|Nhập lệnh / Xem kết quả| CV
@@ -294,18 +295,18 @@ flowchart TD
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as Khách hàng (User)
+    actor User as Khách hàng
     participant CV as ConsoleView
     participant UC as UserController
     participant FS as FileService
-    participant SenderAcc as Account (Người gửi)
-    participant RecvAcc as Account (Người nhận)
-    participant Disk as Tệp tin Đĩa (data/)
+    participant SenderAcc as Account (Gửi)
+    participant RecvAcc as Account (Nhận)
+    participant Disk as Tệp Tin Đĩa
 
-    User->>CV: Nhập mã nhận (14 số) & Số tiền
+    User->>CV: Nhập mã nhận (14 số) và Số tiền
     CV->>UC: Chuyển thông tin giao dịch
     UC->>FS: loadAccount(ReceiverID)
-    FS->>Disk: Đọc data/[ReceiverID].txt
+    FS->>Disk: Đọc data/ReceiverID.txt
     Disk-->>FS: Dữ liệu người nhận
     FS-->>UC: Trả về đối tượng RecvAcc
     UC->>CV: Hiển thị xác nhận (Tên người nhận, Số tiền)
@@ -330,10 +331,10 @@ sequenceDiagram
 
     Note over UC,Disk: Ghi vết lịch sử 2 tài khoản
     UC->>FS: appendTransaction(SenderID, SenderTx)
-    FS->>Disk: data/LichSu[SenderID].txt (std::ios::app)
+    FS->>Disk: data/LichSuSenderID.txt (std::ios::app)
     UC->>FS: appendTransaction(ReceiverID, RecvTx)
-    FS->>Disk: data/LichSu[ReceiverID].txt (std::ios::app)
+    FS->>Disk: data/LichSuReceiverID.txt (std::ios::app)
 
-    UC->>CV: printReceipt("CHUYEN TIEN", Amount, RemainingBalance)
+    UC->>CV: printReceipt(CHUYEN TIEN, Amount, RemainingBalance)
     CV->>User: In biên lai chuyển tiền thành công
 ```
