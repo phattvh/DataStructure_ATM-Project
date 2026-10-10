@@ -4,7 +4,7 @@
 [![Course](https://img.shields.io/badge/Course-Data%20Structures%20%26%20Algorithms-green.svg)](https://cntt.hcmue.edu.vn/)
 [![Institution](https://img.shields.io/badge/University-HCMUE-red.svg)](https://hcmue.edu.vn/)
 [![Standard](https://img.shields.io/badge/Coding%20Standard-C%2B%2B%20Standard%20V2-orange.svg)](docs/01_tieu_chi_cham.md)
-[![Memory Safety](https://img.shields.io/badge/Memory%20Leak-0%20bytes%20(100%25%20Clean)-brightgreen.svg)](test/test_memory_leak.cpp)
+[![Memory Safety](<https://img.shields.io/badge/Memory%20Leak-0%20bytes%20(100%25%20Clean)-brightgreen.svg>)](test/test_memory_leak.cpp)
 [![Test Suite](https://img.shields.io/badge/Tests-100%25%20Passed-success.svg)](test/)
 
 Đồ án môn học **Cấu trúc Dữ liệu & Giải thuật** — Khoa Công nghệ Thông tin, Trường Đại học Sư phạm TP. Hồ Chí Minh (HCMUE).  
@@ -14,11 +14,11 @@ Dự án tập trung vào việc áp dụng mô hình **Lập trình Hướng đ
 
 ## 👥 THÀNH VIÊN NHÓM THỰC HIỆN
 
-| STT | Họ và Tên | Vai trò & Trách nhiệm chính | Nhánh Git |
-| :-: | :--- | :--- | :---: |
-| 1 | **Trần Vũ Hỏa Phát** | **Tech Lead / Core Controller & Admin Flow**<br>- Thiết kế kiến trúc 5 tầng, `Common.h`, Makefile.<br>- Xây dựng bộ điều phối trung tâm `AtmController`, `AdminController`.<br>- Bảo mật Terminal Raw Mode, Atomic Write cô lập PID, ASan/UBSan.<br>- Quản lý hợp nhất đa nhánh & chuẩn hóa hồ sơ tài liệu. | [`phat`](https://github.com/phattvh/DataStructure_ATM-Project/tree/phat) |
-| 2 | **Ngô Trí** | **Data Engineer / Memory & Storage Flow**<br>- Tự cài đặt Generic Template `LinkedList<T>` chuẩn $\mathcal{O}(1)$ thêm cuối.<br>- Xây dựng tầng tệp `FileService` đọc/ghi 5 file vật lý và Auto-Recovery.<br>- Model `Admin`, `Transaction`.<br>- Bộ kiểm định rò rỉ bộ nhớ Memory Audit (67 tests, 0 bytes leaked) & Valgrind. | [`tri`](https://github.com/phattvh/DataStructure_ATM-Project/tree/tri) |
-| 3 | **Hứa Nhựt Tuấn** | **Business Logic / User Flow & UI**<br>- Tầng hiển thị `ConsoleView`, Model `Card` và `Account`.<br>- Toàn bộ logic nghiệp vụ Phân hệ Khách hàng (`UserController`).<br>- Giao dịch tài chính đĩa: Rút tiền, Chuyển tiền nguyên tử ACID, Đổi PIN, Lịch sử.<br>- Soạn thảo Báo cáo Word Đồ án và Kịch bản Demo. | [`tuan`](https://github.com/phattvh/DataStructure_ATM-Project/tree/tuan) |
+| STT | Họ và Tên            | Vai trò & Trách nhiệm chính                                                                                                                                                                                                                                                                                                     |                                Nhánh Git                                 |
+| :-: | :------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :----------------------------------------------------------------------: |
+|  1  | **Trần Vũ Hỏa Phát** | **Tech Lead / Core Controller & Admin Flow**<br>- Thiết kế kiến trúc 5 tầng, `Common.h`, Makefile.<br>- Xây dựng bộ điều phối trung tâm `AtmController`, `AdminController`.<br>- Bảo mật Terminal Raw Mode, Atomic Write cô lập PID, ASan/UBSan.<br>- Quản lý hợp nhất đa nhánh & chuẩn hóa hồ sơ tài liệu.                     | [`phat`](https://github.com/phattvh/DataStructure_ATM-Project/tree/phat) |
+|  2  | **Huỳnh Minh Trí**   | **Data Engineer / Memory & Storage Flow**<br>- Tự cài đặt Generic Template `LinkedList<T>` chuẩn $\mathcal{O}(1)$ thêm cuối.<br>- Xây dựng tầng tệp `FileService` đọc/ghi 5 file vật lý và Auto-Recovery.<br>- Model `Admin`, `Transaction`.<br>- Bộ kiểm định rò rỉ bộ nhớ Memory Audit (67 tests, 0 bytes leaked) & Valgrind. |  [`tri`](https://github.com/phattvh/DataStructure_ATM-Project/tree/tri)  |
+|  3  | **Hứa Nhựt Tuấn**    | **Business Logic / User Flow & UI**<br>- Tầng hiển thị `ConsoleView`, Model `Card` và `Account`.<br>- Toàn bộ logic nghiệp vụ Phân hệ Khách hàng (`UserController`).<br>- Giao dịch tài chính đĩa: Rút tiền, Chuyển tiền nguyên tử ACID, Đổi PIN, Lịch sử.<br>- Soạn thảo Báo cáo Word Đồ án và Kịch bản Demo.                  | [`tuan`](https://github.com/phattvh/DataStructure_ATM-Project/tree/tuan) |
 
 ---
 
@@ -56,22 +56,25 @@ Dự án tập trung vào việc áp dụng mô hình **Lập trình Hướng đ
 Dữ liệu mẫu đã được tích hợp sẵn trong thư mục `data/` phục vụ kiểm thử ngay lập tức:
 
 ### 1. Phân hệ Quản trị viên (Admin)
+
 - **Tài khoản**: `admin1` | **Mật khẩu**: `123456`
 - **Tài khoản**: `superadmin` | **Mật khẩu**: `888888`
 
 ### 2. Phân hệ Khách hàng (User / Thẻ ATM)
-| Số thẻ (14 chữ số) | Mã PIN | Chủ tài khoản | Số dư ban đầu | Trạng thái / Mục đích test |
-| :--- | :---: | :--- | :---: | :--- |
-| **`10014504500003`** | `654321` | Lê Văn Cường | 750.000 VND | Đã đổi PIN, **vào thẳng Menu chính** để test ngay |
-| **`10014504500005`** | `888888` | Nguyễn Văn E | 3.000.000 VND | Đang hoạt động bình thường |
+
+| Số thẻ (14 chữ số)   |  Mã PIN  | Chủ tài khoản     | Số dư ban đầu | Trạng thái / Mục đích test                            |
+| :------------------- | :------: | :---------------- | :-----------: | :---------------------------------------------------- |
+| **`10014504500003`** | `654321` | Lê Văn Cường      |  750.000 VND  | Đã đổi PIN, **vào thẳng Menu chính** để test ngay     |
+| **`10014504500005`** | `888888` | Nguyễn Văn E      | 3.000.000 VND | Đang hoạt động bình thường                            |
 | **`10014504500001`** | `123456` | Nguyen Trung Kien | 5.000.000 VND | PIN mặc định: **Hệ thống sẽ ép đổi mã PIN mới trước** |
-| **`10014504500002`** | `123456` | Tran Thi Binh | 1.200.000 VND | Dùng để nhận tiền test chuyển khoản |
+| **`10014504500002`** | `123456` | Tran Thi Binh     | 1.200.000 VND | Dùng để nhận tiền test chuyển khoản                   |
 
 ---
 
 ## 🚀 HƯỚNG DẪN BIÊN DỊCH & CHẠY ỨNG DỤNG
 
 ### 1. Yêu cầu môi trường
+
 - **Hệ điều hành**: Linux (Ubuntu 20.04/22.04/24.04), macOS, hoặc Windows (thông qua WSL hoặc MinGW GCC).
 - **Trình biên dịch**: `g++` hỗ trợ chuẩn **C++17** trở lên.
 - **Công cụ xây dựng**: `make`.
@@ -108,6 +111,7 @@ make clean
 
 > [!TIP]
 > Trong quá trình test, nếu bạn muốn nhanh chóng đưa toàn bộ dữ liệu mẫu trong `data/` về lại trạng thái ban đầu sạch sẽ, bạn chỉ cần chạy:
+>
 > ```bash
 > git restore data/
 > git clean -fd data/
@@ -205,6 +209,7 @@ Nhóm đã xây dựng tài liệu chi tiết cho từng giai đoạn phát tri�
 ## 🌿 QUY CHUẨN LÀM VIỆC VỚI GIT
 
 ### 1. Cấu trúc nhánh
+
 - `main`: Nhánh phát hành chính thức (Release), mã nguồn ổn định tuyệt đối đã qua nghiệm thu.
 - `fix`: Nhánh tích hợp & kiểm thử liên phân hệ (Integration & QA).
 - `phat`: Nhánh phát triển của Thành viên Phát (Member C - Tech Lead).
@@ -212,7 +217,9 @@ Nhóm đã xây dựng tài liệu chi tiết cho từng giai đoạn phát tri�
 - `tuan`: Nhánh phát triển của Thành viên Tuấn (Member A - Business & UI).
 
 ### 2. Tiêu chuẩn viết Commit Message
+
 Nội dung commit sử dụng tiếng Anh chuẩn mực theo chuẩn Conventional Commits:
+
 - `feat:` Bổ sung tính năng mới.
 - `fix:` Sửa lỗi logic hoặc xử lý ngoại lệ.
 - `docs:` Cập nhật tài liệu kỹ thuật.
